@@ -1,7 +1,8 @@
 import torch.nn as nn
 import torch
 
-from models import resnet, wrn
+from networks import resnet, wrn
+
 
 class TLResNet(resnet.ResNet):
     """
