@@ -80,9 +80,9 @@ def get_cifar_testing_dataloader(dataset, batch_size=128, num_workers=4, shuffle
         compose_list.append(transforms.Normalize(mean, std))
     transform_test = transforms.Compose(compose_list)
     test = _data(root=os.path.join(DATA_DIR, "CIFAR"), train=False, download=True, transform=transform_test)
-    test_loader = DataLoader(test, shuffle=shuffle, num_workers=num_workers, batch_size=batch_size)
+    testing_loader = DataLoader(test, shuffle=shuffle, num_workers=num_workers, batch_size=batch_size)
 
-    return test_loader
+    return testing_loader
 
 
 def get_mnist_training_data(batch_size=128, num_workers=4, normalize=True):
@@ -113,6 +113,26 @@ def get_mnist_testing_data(batch_size=128, num_workers=4, normalize=True):
     testing_loader = DataLoader(testing_data, shuffle=False, num_workers=num_workers, batch_size=batch_size)
 
     return testing_loader
+
+
+def evaluate_accuracy(model: Module, test_loader: DataLoader, device: torch.device, debug=False) -> float:
+    model.eval()
+    correct = 0
+    with torch.no_grad():
+        for data in test_loader:
+            inputs, labels = data[0].to(device), data[1].to(device)
+            _, y_hats = model(inputs).max(1)
+            match = (y_hats == labels)
+            correct += len(match.nonzero())
+
+    if debug:
+        print(f"Testing: {len(test_loader.dataset)}")
+        print(f"correct: {correct}")
+        print(f"accuracy: {100 * correct / len(test_loader.dataset):.3f}%")
+
+    model.train()
+
+    return correct / len(test_loader.dataset)
 
 
 def compute_mean_std(cifar100_dataset):

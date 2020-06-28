@@ -1,25 +1,26 @@
 import os
 import time
 import json
-from typing import Dict
+from typing import Dict, Tuple, Callable, Any
 
 import torch
 from torch import optim
 from torch.nn.modules.module import Module
 from torch.utils.data import DataLoader
+from torchvision import transforms
 
 from networks.resnet import resnet18
+from networks.wrn import wrn34_10
 from tl import TLWideResNet
 from config import settings
-from utils import WarmUpLR
-
+from utils import WarmUpLR, evaluate_accuracy
+from art_utils import init_attacker, init_classifier
 
 # if the batch_size and model structure is fixed, this may accelerate the training process
 torch.backends.cudnn.benchmark = True
 
 
-class Trainer:
-
+class BaseTrainer:
     def __init__(self, model: Module, train_loader: DataLoader,
                  test_loader: DataLoader, checkpoint_path: str = None):
         print("initialize trainer")
@@ -42,9 +43,7 @@ class Trainer:
         print(f"parameters: ")
         self.print_parameters()
 
-    def train(self, save_path, attack=False, attacker=None, params: Dict = None):
-        self._init_attacker(attack, attacker, params)
-
+    def train(self, save_path):
         batch_number = len(self._train_loader)
         best_acc = self.best_acc
         start_epoch = self.start_epoch
@@ -64,53 +63,19 @@ class Trainer:
             start_time = time.process_time()
 
             for index, data in enumerate(self._train_loader):
+                sub_running_loss, sub_training_acc = self.step_batch(data[0], data[1])
 
-                inputs, labels = data[0].to(self._device), data[1].to(self._device)
-
-                self.optimizer.zero_grad()
-                if attack:
-                    # calculate this first, for this will zero the grad
-                    adv_inputs = self.attacker.calc_perturbation(inputs, labels)
-                    # zero the grad
-                    self.optimizer.zero_grad()
-                    # feature extractor
-                    z_outputs = self.model.feature_extractor(inputs)
-                    z_adv_outputs = self.model.feature_extractor(adv_inputs)
-                    # adv_outputs = self.model(adv_inputs)
-                    # outputs = self.model(inputs)
-                    adv_outputs = self.model.fc(z_adv_outputs.view(z_adv_outputs.size(0), -1))
-                    outputs = self.model.fc(z_outputs.view(z_outputs.size(0), -1))
-
-                    _loss = 0.005 * torch.norm(z_outputs - z_adv_outputs).item() + 1.0 * self.criterion(outputs,
-                        labels) + self.criterion(
-                        adv_outputs, labels)
-                    # _loss = self.hp.criterion(adv_outputs, labels)
-                else:
-                    outputs = self.model(inputs)
-
-                    # outputs_before_fc = self.model.feature_extractor(inputs)
-                    _loss = self.criterion(outputs, labels)
-                    # _loss += + 0.005 * torch.norm(outputs_before_fc - pre_output).item()
-
-                _loss.backward()
-                self.optimizer.step()
-                # torch.cuda.empty_cache()
-
-                outputs: torch.Tensor
-                # adv_outputs: torch.Tensor
-                # todo
-                training_acc += (outputs.argmax(dim=1) == labels).float().mean().item()
+                training_acc += sub_training_acc
+                running_loss += sub_running_loss
 
                 # warm up learning rate
                 if ep <= self._warm_up_epochs:
                     self.warm_up_scheduler.step()
 
-                running_loss += _loss.item()
-
                 if index % batch_number == batch_number - 1:
                     end_time = time.process_time()
 
-                    acc = self.test(self.model, test_loader=self._test_loader, device=self._device)
+                    acc = self.test()
                     print(
                         f"epoch: {ep}   loss: {(running_loss / batch_number):.6f}   train accuracy: {training_acc / batch_number}   "
                         f"test accuracy: {acc}   time: {end_time - start_time:.2f}s")
@@ -119,40 +84,16 @@ class Trainer:
                         best_acc = acc
                         self._save_best_model(save_path, ep, acc)
 
-            self.optimizer.step()
             self._save_checkpoint(save_path, ep, best_acc)
 
         print("finished training")
         print(f"best accuracy on test set: {best_acc}")
 
-    @staticmethod
-    def test(model: Module, test_loader, device, debug=False):
-        model.eval()
-        correct = 0
-        with torch.no_grad():
-            for data in test_loader:
-                inputs, labels = data[0].to(device), data[1].to(device)
-                _, y_hats = model(inputs).max(1)
-                match = (y_hats == labels)
-                correct += len(match.nonzero())
+    def step_batch(self, inputs: torch.Tensor, labels: torch.Tensor):
+        raise NotImplementedError("must overwrite method `step_epoch`")
 
-        if debug:
-            print(f"Testing: {len(test_loader.dataset)}")
-            print(f"correct: {correct}")
-            print(f"accuracy: {100 * correct / len(test_loader.dataset):.3f}%")
-
-        model.train()
-
-        return correct / len(test_loader.dataset)
-
-    def _init_attacker(self, attack, attacker, params):
-        self.attack = attack
-        if attack:
-            print(f"robustness training with {attacker.__name__}")
-            self.attacker = attacker(self.model, **params)
-            self.attacker.print_params()
-        else:
-            print("normal training")
+    def test(self):
+        return evaluate_accuracy(self.model, self._test_loader, self._device)
 
     def _init_dataloader(self, train_loader, test_loader) -> None:
         self._test_loader = test_loader
@@ -202,16 +143,11 @@ class Trainer:
         info = {
             "current_epochs": current_epochs,
             "total_epochs": self._train_epochs,
-            "accuracy": accuracy
+            "best_accuracy": accuracy
         }
-        if self.attack:
-            info.update({
-                "attack": self.attack,
-                "attacker": type(self.attacker).__name__,
-                "epsilons": self.attacker.epsilon,
-            })
         with open(os.path.join(os.path.dirname(save_path), "info.json"), "w", encoding="utf8") as f:
             json.dump(info, f)
+        torch.save(self.model.state_dict(), f"{save_path}-best")
 
     def _adjust_lr(self, ep):
         if ep > self._warm_up_epochs:
@@ -252,18 +188,149 @@ class Trainer:
 
     @staticmethod
     def train_tl(origin_model_path, save_path, train_loader,
-                 test_loader, device, choice="wrn34_10", num_classes=10, droprate=0):
+                 test_loader, choice="wrn34_10", num_classes=10, droprate=0):
         print(f"transform learning on model: {origin_model_path}")
         model = TLWideResNet.create_model(choice, droprate=droprate, num_classes=num_classes)
         model.load_model(origin_model_path)
-        trainer = Trainer(model=model, train_loader=train_loader, test_loader=test_loader)
+        trainer = BaseTrainer(model=model, train_loader=train_loader, test_loader=test_loader)
         trainer.train(save_path)
 
 
+class NormalTrainer(BaseTrainer):
+    def __init__(self, model: Module, train_loader: DataLoader,
+                 test_loader: DataLoader, checkpoint_path: str = None):
+        super(NormalTrainer, self).__init__(model, train_loader, test_loader, checkpoint_path)
+
+    def step_batch(self, inputs: torch.Tensor, labels: torch.Tensor) -> Tuple[float, float]:
+        inputs, labels = inputs.to(self._device), labels.to(self._device)
+        self.optimizer.zero_grad()
+
+        outputs = self.model(inputs)
+        loss = self.criterion(outputs, labels)
+        loss.backward()
+        self.optimizer.step()
+
+        sub_training_acc = (outputs.argmax(dim=1) == labels).float().mean().item()
+        sub_running_loss = loss.item()
+
+        return sub_running_loss, sub_training_acc
+
+
+class BaseADVTrainer(BaseTrainer):
+    def __init__(self, model: Module, train_loader: DataLoader,
+                 test_loader: DataLoader, attacker, params: Dict,
+                 checkpoint_path: str = None):
+        super(BaseADVTrainer, self).__init__(model, train_loader, test_loader, checkpoint_path)
+        self.attacker = self._init_attacker(attacker, params)
+
+    def _init_attacker(self, attacker, params):
+        raise NotImplementedError("must overwrite method `init_attacker`")
+
+
+class ADVTrainer(BaseADVTrainer):
+    def __init__(self, model: Module, train_loader: DataLoader,
+                 test_loader: DataLoader, attacker, params: Dict,
+                 checkpoint_path: str = None):
+        super(ADVTrainer, self).__init__(model, train_loader, test_loader, attacker, params, checkpoint_path)
+
+    def _init_attacker(self, attacker, params):
+        print(f"robustness training with {type(attacker).__name__}")
+        attacker = attacker(self.model, **params)
+        attacker.print_parameters()
+
+        return attacker
+
+    def step_batch(self, inputs: torch.Tensor, labels: torch.Tensor):
+        inputs, labels = inputs.to(self._device), labels.to(self._device)
+        self.optimizer.zero_grad()
+
+        adv_inputs = self._gen_adv(inputs, labels)
+        adv_outputs = self.model(adv_inputs)
+        outputs = self.model(inputs)
+        loss = self.criterion(outputs, labels) + self.criterion(adv_outputs, labels)
+        loss.backward()
+        self.optimizer.step()
+
+        sub_training_acc = (outputs.argmax(dim=1) == labels).float().mean().item()
+        sub_running_loss = loss.item()
+
+        return sub_running_loss, sub_training_acc
+
+    def _gen_adv(self, inputs: torch.Tensor, labels: torch.Tensor):
+        self.model.eval()
+
+        adv_inputs = self.attacker.generate(inputs, labels)
+        adv_inputs = adv_inputs.to(self._device)
+
+        self.optimizer.zero_grad()
+        self.model.train()
+
+        return adv_inputs
+
+
+class ARTTrainer(BaseADVTrainer):
+    def __init__(self, model: Module, train_loader: DataLoader,
+                 test_loader: DataLoader, attacker: str, params: Dict,
+                 dataset_mean, dataset_std, checkpoint_path: str = None):
+        super(ARTTrainer, self).__init__(model, train_loader, test_loader, attacker, params, checkpoint_path)
+        self._init_normalize(dataset_mean, dataset_std)
+
+    def _init_attacker(self, attacker, params):
+        print(f"robustness training with {attacker}")
+        classifier = init_classifier(model=self.model)
+        return init_attacker(classifier, attacker, params)
+
+    def step_batch(self, inputs: torch.Tensor, labels: torch.Tensor):
+        inputs, labels = inputs.to(self._device), labels.to(self._device)
+        self.optimizer.zero_grad()
+
+        adv_inputs = self._gen_adv(inputs)
+        adv_outputs = self.model(adv_inputs)
+        self._apply_normalize(inputs)
+        outputs = self.model(inputs)
+
+        loss = self.criterion(outputs, labels) + self.criterion(adv_outputs, labels)
+        loss.backward()
+        self.optimizer.step()
+
+        sub_training_acc = (outputs.argmax(dim=1) == labels).float().mean().item()
+        sub_running_loss = loss.item()
+
+        return sub_running_loss, sub_training_acc
+
+    def _gen_adv(self, inputs: torch.Tensor):
+        self.model.eval()
+
+        adv_inputs = torch.from_numpy(self.attacker.generate(x=inputs.cpu().numpy()))
+        adv_inputs = adv_inputs.to(self._device)
+
+        self.optimizer.zero_grad()
+        self.model.train()
+
+        return adv_inputs
+
+    def _init_normalize(self, mean, std):
+        self._normalize = transforms.Normalize(mean=mean, std=std, inplace=True)
+
+    def _apply_normalize(self, batch_tensor: torch.Tensor):
+        with torch.no_grad():
+            for t in batch_tensor[:]:
+                self._normalize(t)
+
+
 if __name__ == '__main__':
-    from utils import get_cifar_testing_dataloader, get_cifar_training_dataloader
+    from utils import get_cifar_testing_dataloader, get_cifar_training_dataloader, CIFAR100_TRAIN_STD, CIFAR100_TRAIN_MEAN
+    from art_utils import attack_params
+
     model = resnet18(num_classes=100)
-    trainer = Trainer(model, get_cifar_training_dataloader("cifar100"),
-                      get_cifar_testing_dataloader("cifar100"))
+    trainer = ARTTrainer(
+        model, get_cifar_training_dataloader("cifar100"),
+        get_cifar_testing_dataloader("cifar100"),
+        attacker="ProjectedGradientDescent",
+        params=attack_params.get("ProjectedGradientDescent"),
+        dataset_mean=CIFAR100_TRAIN_MEAN,
+        dataset_std=CIFAR100_TRAIN_STD,
+        checkpoint_path="./checkpoint.pth"
+    )
 
     trainer.train("./test_resnet")
