@@ -9,12 +9,12 @@ from torch.nn.modules.module import Module
 from torch.utils.data import DataLoader
 from torchvision import transforms
 
-from networks.resnet import resnet18
+from networks.resnet import resnet18, resnet34
 from networks.wrn import wrn34_10
 from tl import TLWideResNet
 from config import settings
 from utils import WarmUpLR, evaluate_accuracy
-from art_utils import init_attacker, init_classifier
+from art_utils import init_attacker, init_classifier, gen_adv
 
 # if the batch_size and model structure is fixed, this may accelerate the training process
 torch.backends.cudnn.benchmark = True
@@ -93,7 +93,7 @@ class BaseTrainer:
         raise NotImplementedError("must overwrite method `step_epoch`")
 
     def test(self):
-        return evaluate_accuracy(self.model, self._test_loader, self._device)
+        return evaluate_accuracy(self.model, self._test_loader, self._device, debug=True)
 
     def _init_dataloader(self, train_loader, test_loader) -> None:
         self._test_loader = test_loader
@@ -242,12 +242,13 @@ class ADVTrainer(BaseADVTrainer):
 
     def step_batch(self, inputs: torch.Tensor, labels: torch.Tensor):
         inputs, labels = inputs.to(self._device), labels.to(self._device)
-        self.optimizer.zero_grad()
 
         adv_inputs = self._gen_adv(inputs, labels)
-        adv_outputs = self.model(adv_inputs)
-        outputs = self.model(inputs)
-        loss = self.criterion(outputs, labels) + self.criterion(adv_outputs, labels)
+        outputs = self.model(adv_inputs)
+        # outputs = self.model(inputs)
+        # loss = self.criterion(outputs, labels) + self.criterion(adv_outputs, labels)
+        loss = self.criterion(outputs, labels)
+        self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
 
@@ -259,10 +260,11 @@ class ADVTrainer(BaseADVTrainer):
     def _gen_adv(self, inputs: torch.Tensor, labels: torch.Tensor):
         self.model.eval()
 
-        adv_inputs = self.attacker.generate(inputs, labels)
+        adv_inputs = self.attacker.calc_perturbation(inputs, labels)
         adv_inputs = adv_inputs.to(self._device)
 
-        self.optimizer.zero_grad()
+        # so disgusting, can't zero grad here
+        # self.optimizer.zero_grad()
         self.model.train()
 
         return adv_inputs
@@ -282,18 +284,19 @@ class ARTTrainer(BaseADVTrainer):
 
     def step_batch(self, inputs: torch.Tensor, labels: torch.Tensor):
         inputs, labels = inputs.to(self._device), labels.to(self._device)
-        self.optimizer.zero_grad()
 
         adv_inputs = self._gen_adv(inputs)
         adv_outputs = self.model(adv_inputs)
-        self._apply_normalize(inputs)
-        outputs = self.model(inputs)
-
-        loss = self.criterion(outputs, labels) + self.criterion(adv_outputs, labels)
+        # self._apply_normalize(inputs)
+        # outputs = self.model(inputs)
+        # loss = self.criterion(outputs, labels) + self.criterion(adv_outputs, labels)
+        # loss.backward()
+        loss = self.criterion(adv_outputs, labels)
+        self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
 
-        sub_training_acc = (outputs.argmax(dim=1) == labels).float().mean().item()
+        sub_training_acc = (adv_outputs.argmax(dim=1) == labels).float().mean().item()
         sub_running_loss = loss.item()
 
         return sub_running_loss, sub_training_acc
@@ -304,7 +307,7 @@ class ARTTrainer(BaseADVTrainer):
         adv_inputs = torch.from_numpy(self.attacker.generate(x=inputs.cpu().numpy()))
         adv_inputs = adv_inputs.to(self._device)
 
-        self.optimizer.zero_grad()
+        # self.optimizer.zero_grad()
         self.model.train()
 
         return adv_inputs
@@ -319,18 +322,35 @@ class ARTTrainer(BaseADVTrainer):
 
 
 if __name__ == '__main__':
-    from utils import get_cifar_testing_dataloader, get_cifar_training_dataloader, CIFAR100_TRAIN_STD, CIFAR100_TRAIN_MEAN
+    from utils import get_cifar_testing_dataloader, get_cifar_training_dataloader, CIFAR100_TRAIN_STD, \
+        CIFAR100_TRAIN_MEAN, CIFAR10_TRAIN_MEAN, CIFAR10_TRAIN_STD
     from art_utils import attack_params
 
-    model = resnet18(num_classes=100)
-    trainer = ARTTrainer(
-        model, get_cifar_training_dataloader("cifar100"),
-        get_cifar_testing_dataloader("cifar100"),
-        attacker="ProjectedGradientDescent",
-        params=attack_params.get("ProjectedGradientDescent"),
-        dataset_mean=CIFAR100_TRAIN_MEAN,
-        dataset_std=CIFAR100_TRAIN_STD,
+    model = resnet18(num_classes=10)
+    # trainer = ARTTrainer(
+    #     model, get_cifar_training_dataloader("cifar10", normalize=False),
+    #     get_cifar_testing_dataloader("cifar10"),
+    #     attacker="ProjectedGradientDescent",
+    #     params=attack_params.get("ProjectedGradientDescent"),
+    #     dataset_mean=CIFAR10_TRAIN_MEAN,
+    #     dataset_std=CIFAR10_TRAIN_STD,
+    #     checkpoint_path="./checkpoint.pth"
+    # )
+
+    from attack import LinfPGDAttack, attack_params
+
+    trainer = ADVTrainer(
+        model, get_cifar_training_dataloader("cifar10", normalize=False),
+        get_cifar_testing_dataloader("cifar10", normalize=False),
+        attacker=LinfPGDAttack,
+        params=attack_params.get("PGDAttack"),
         checkpoint_path="./checkpoint.pth"
     )
+
+    # trainer = NormalTrainer(
+    #     model, get_cifar_training_dataloader("cifar10"),
+    #     get_cifar_testing_dataloader("cifar10"),
+    #     checkpoint_path="./checkpoint.pth"
+    # )
 
     trainer.train("./test_resnet")

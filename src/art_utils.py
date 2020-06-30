@@ -42,6 +42,7 @@ def init_classifier(
         loss=getattr(nn, settings.criterion)()
     )
     classifier.set_learning_phase(False)
+    classifier.fit()
 
     return classifier
 

@@ -4,12 +4,23 @@ from typing import Any, Callable, Union
 import torch
 from torch import Tensor
 import torch.nn as nn
+import numpy as np
 
 
-class PGDAttack:
+attack_params = {
+    "PGDAttack": {
+        "random_init": 1,
+        "epsilon": 4/255,
+        "step_size": 2/255,
+        "num_steps": 7
+    }
+}
+
+
+class LinfPGDAttack:
 
     def __init__(self, model: torch.nn.Module, clip_min=0, clip_max=1,
-                 random_init: int = 1, epsilon=8/255, step_size=2/255, num_steps=7,
+                 random_init: int = True, epsilon=8/255, step_size=2/255, num_steps=20,
                  loss_function: Callable[[Any], Tensor] = nn.CrossEntropyLoss()
                  ):
 
@@ -28,7 +39,7 @@ class PGDAttack:
 
         return delta
 
-    def generate(self, x: Tensor, target: Tensor) -> Tensor:
+    def calc_perturbation(self, x: Tensor, target: Tensor) -> Tensor:
         delta = torch.zeros_like(x)
         if self.random_init:
             delta = self.random_delta(delta)
@@ -51,12 +62,10 @@ class PGDAttack:
 
         return xt
 
-    def print_params(self):
-        print(f"iter_num: {self.num_steps}, epsilon: {self.epsilon}, loss: {self.loss_function.__name__}")
+    def print_parameters(self):
+        print(f"{self.__dict__}")
 
 
 if __name__ == '__main__':
-    from networks.wrn import wrn34_10
-    model = wrn34_10(num_classes=100)
-
+    pass
 

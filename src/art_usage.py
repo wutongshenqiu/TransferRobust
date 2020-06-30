@@ -7,13 +7,12 @@ from pprint import pprint
 
 from typing import Tuple, Dict
 
-from art.attacks import DeepFool, FastGradientMethod, ProjectedGradientDescent, CarliniL2Method, PixelAttack, Attack
+from art.attacks.evasion import DeepFool, FastGradientMethod, ProjectedGradientDescent, CarliniL2Method, PixelAttack, Attack
 from art.classifiers import PyTorchClassifier
 import torch
 import torch.nn as nn
 import numpy as np
 
-from models import resnet
 from utils import test_model, get_mnist_testing_data, get_cifar_testing_dataloader
 
 
