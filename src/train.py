@@ -63,10 +63,10 @@ class BaseTrainer:
             start_time = time.process_time()
 
             for index, data in enumerate(self._train_loader):
-                sub_running_loss, sub_training_acc = self.step_batch(data[0], data[1])
+                batch_running_loss, batch_training_acc = self.step_batch(data[0], data[1])
 
-                training_acc += sub_training_acc
-                running_loss += sub_running_loss
+                training_acc += batch_training_acc
+                running_loss += batch_running_loss
 
                 # warm up learning rate
                 if ep <= self._warm_up_epochs:
@@ -89,7 +89,7 @@ class BaseTrainer:
         print("finished training")
         print(f"best accuracy on test set: {best_acc}")
 
-    def step_batch(self, inputs: torch.Tensor, labels: torch.Tensor):
+    def step_batch(self, inputs: torch.Tensor, labels: torch.Tensor) -> Tuple[float, float]:
         raise NotImplementedError("must overwrite method `step_epoch`")
 
     def test(self):
@@ -210,10 +210,10 @@ class NormalTrainer(BaseTrainer):
         loss.backward()
         self.optimizer.step()
 
-        sub_training_acc = (outputs.argmax(dim=1) == labels).float().mean().item()
-        sub_running_loss = loss.item()
+        batch_training_acc = (outputs.argmax(dim=1) == labels).float().mean().item()
+        batch_running_loss = loss.item()
 
-        return sub_running_loss, sub_training_acc
+        return batch_running_loss, batch_training_acc
 
 
 class BaseADVTrainer(BaseTrainer):
@@ -252,10 +252,10 @@ class ADVTrainer(BaseADVTrainer):
         loss.backward()
         self.optimizer.step()
 
-        sub_training_acc = (outputs.argmax(dim=1) == labels).float().mean().item()
-        sub_running_loss = loss.item()
+        batch_training_acc = (outputs.argmax(dim=1) == labels).float().mean().item()
+        batch_running_loss = loss.item()
 
-        return sub_running_loss, sub_training_acc
+        return batch_running_loss, batch_training_acc
 
     def _gen_adv(self, inputs: torch.Tensor, labels: torch.Tensor):
         self.model.eval()
@@ -296,10 +296,10 @@ class ARTTrainer(BaseADVTrainer):
         loss.backward()
         self.optimizer.step()
 
-        sub_training_acc = (adv_outputs.argmax(dim=1) == labels).float().mean().item()
-        sub_running_loss = loss.item()
+        batch_training_acc = (adv_outputs.argmax(dim=1) == labels).float().mean().item()
+        batch_running_loss = loss.item()
 
-        return sub_running_loss, sub_training_acc
+        return batch_running_loss, batch_training_acc
 
     def _gen_adv(self, inputs: torch.Tensor):
         self.model.eval()
@@ -343,7 +343,7 @@ if __name__ == '__main__':
         model, get_cifar_training_dataloader("cifar10", normalize=False),
         get_cifar_testing_dataloader("cifar10", normalize=False),
         attacker=LinfPGDAttack,
-        params=attack_params.get("PGDAttack"),
+        params=attack_params.get("LinfPGDAttack"),
         checkpoint_path="./checkpoint.pth"
     )
 

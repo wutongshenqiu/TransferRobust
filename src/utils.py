@@ -135,6 +135,13 @@ def evaluate_accuracy(model: Module, test_loader: DataLoader, device: torch.devi
     return correct / len(test_loader.dataset)
 
 
+def get_fc_out_features(model: Module):
+    if not hasattr(model, "fc"):
+        raise AttributeError("model doesn't have attribute as fully connected layer!")
+
+    return model.fc.out_features
+
+
 def compute_mean_std(cifar100_dataset):
     """compute the mean and std of cifar100 dataset
     Args:
@@ -196,25 +203,6 @@ def grey_to_img(img: Tensor):
     plt.imshow(new_img)
     plt.axis("off")
     plt.show()
-
-
-def test_model(model: Module, test_loader, device="cpu"):
-    model.eval()
-    correct = 0
-    with torch.no_grad():
-        for data in test_loader:
-            inputs, labels = data[0].to(device), data[1].to(device)
-            _, y_hats = model(inputs).max(1)
-            match = (y_hats == labels)
-            correct += len(match.nonzero())
-
-    print(f"Testing: {len(test_loader.dataset)}")
-    print(f"correct: {correct}")
-    print(f"accuracy: {100 * correct / len(test_loader.dataset):.3f}%")
-
-    model.train()
-
-    return correct / len(test_loader.dataset)
 
 
 def load_json(json_path: str) -> Dict[Any, Any]:

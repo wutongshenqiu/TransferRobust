@@ -86,4 +86,3 @@ class WideResNet(nn.Module):
 
 def wrn34_10(num_classes=100):
     return WideResNet(34, num_classes, 10, 0)
-    

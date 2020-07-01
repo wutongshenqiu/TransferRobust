@@ -8,9 +8,9 @@ import numpy as np
 
 
 attack_params = {
-    "PGDAttack": {
+    "LinfPGDAttack": {
         "random_init": 1,
-        "epsilon": 4/255,
+        "epsilon": 8/255,
         "step_size": 2/255,
         "num_steps": 7
     }
