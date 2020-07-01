@@ -1,7 +1,7 @@
 import os
 import time
 import json
-from typing import Dict, Tuple, Callable, Any
+from typing import Dict, Tuple, Callable, Any, List
 
 import torch
 from torch import optim
@@ -11,7 +11,6 @@ from torchvision import transforms
 
 from networks.resnet import resnet18, resnet34
 from networks.wrn import wrn34_10
-from tl import TLWideResNet
 from config import settings
 from utils import WarmUpLR, evaluate_accuracy
 from art_utils import init_attacker, init_classifier, gen_adv
@@ -186,15 +185,6 @@ class BaseTrainer:
         self.start_epoch = start_epoch
         self.best_acc = best_acc
 
-    @staticmethod
-    def train_tl(origin_model_path, save_path, train_loader,
-                 test_loader, choice="wrn34_10", num_classes=10, droprate=0):
-        print(f"transform learning on model: {origin_model_path}")
-        model = TLWideResNet.create_model(choice, droprate=droprate, num_classes=num_classes)
-        model.load_model(origin_model_path)
-        trainer = BaseTrainer(model=model, train_loader=train_loader, test_loader=test_loader)
-        trainer.train(save_path)
-
 
 class NormalTrainer(BaseTrainer):
     def __init__(self, model: Module, train_loader: DataLoader,
@@ -214,6 +204,44 @@ class NormalTrainer(BaseTrainer):
         batch_running_loss = loss.item()
 
         return batch_running_loss, batch_training_acc
+
+
+class CIFARTLTrainer(NormalTrainer):
+    def __init__(self, teacher_model_path: str,
+                 model: Module, train_loader: DataLoader,
+                 test_loader: DataLoader, checkpoint_path: str = None):
+        teacher_state_dict = self._load_teacher_state_dict(teacher_model_path)
+        self._reshape_teacher_fc_layer(model, teacher_state_dict)
+        self._reinitialize_layers_weight(model, ["fc"])
+        self._freeze_untrained_layers(model, ["fc"])
+        super(NormalTrainer, self).__init__(model, train_loader, test_loader, checkpoint_path)
+
+    def _load_teacher_state_dict(self, teacher_model_path: str):
+        return torch.load(teacher_model_path)
+
+    def _reshape_teacher_fc_layer(self, model, state_dict) -> None:
+        state_dict["fc.weight"] = torch.rand_like(model.fc.weight)
+        if state_dict.get("fc.bias"):
+            state_dict["fc.bias"] = torch.rand_like(model.fc.bias)
+
+    def _reinitialize_layers_weight(self, model: Module, layer_list: List[str]) -> None:
+        for layer in layer_list:
+            _layer = getattr(model, layer)
+            _layer.reset_parameters()
+
+    def _freeze_untrained_layers(self, model, trained_layers: List[str]) -> None:
+        for p in model.parameters():
+            p.requires_grad = False
+
+        for layer in trained_layers:
+            _layer = getattr(model, layer)
+            for p in _layer.parameters():
+                p.requires_grad = True
+
+        # print trainable layers
+        for name, param in model.named_modules():
+            if param.requires_grad:
+                print(f"name: {name}, size: {param.size()}")
 
 
 class BaseADVTrainer(BaseTrainer):
@@ -322,14 +350,26 @@ class ARTTrainer(BaseADVTrainer):
 
 
 if __name__ == '__main__':
-    from utils import get_cifar_testing_dataloader, get_cifar_training_dataloader, CIFAR100_TRAIN_STD, \
-        CIFAR100_TRAIN_MEAN, CIFAR10_TRAIN_MEAN, CIFAR10_TRAIN_STD
+    from utils import get_cifar_testing_dataloader, get_cifar_training_dataloader
     from art_utils import attack_params
 
-    model = resnet18(num_classes=10)
+    # model = wrn34_10(num_classes=100)
+
+    # tranform learning
+    model = wrn34_10(num_classes=10)
+    trainer = CIFARTLTrainer(
+        teacher_model_path="./trained_models/cifar100_wrn34_10-best",
+        model=model,
+        train_loader=get_cifar_training_dataloader("cifar10"),
+        test_loader=get_cifar_testing_dataloader("cifar10"),
+        checkpoint_path="./checkpoint.pth"
+    )
+
+    # fixme
+    # still have bugs
     # trainer = ARTTrainer(
     #     model, get_cifar_training_dataloader("cifar10", normalize=False),
-    #     get_cifar_testing_dataloader("cifar10"),
+    #     get_cifar_testing_dataloader("cifar10", normalize=False),
     #     attacker="ProjectedGradientDescent",
     #     params=attack_params.get("ProjectedGradientDescent"),
     #     dataset_mean=CIFAR10_TRAIN_MEAN,
@@ -337,14 +377,17 @@ if __name__ == '__main__':
     #     checkpoint_path="./checkpoint.pth"
     # )
 
-    from attack import LinfPGDAttack, attack_params
+    from attack import PGDAttack, attack_params
 
     trainer = ADVTrainer(
-        model, get_cifar_training_dataloader("cifar10", normalize=False),
-        get_cifar_testing_dataloader("cifar10", normalize=False),
-        attacker=LinfPGDAttack,
+        # todo
+        # !!! 这里不能使用 normalize，因为 attack 的实现里面没有考虑 normalize
+        # 那ART训练又是为什么呢？
+        model, get_cifar_training_dataloader("cifar100", normalize=False),
+        get_cifar_testing_dataloader("cifar100", normalize=False),
+        attacker=PGDAttack,
         params=attack_params.get("LinfPGDAttack"),
-        checkpoint_path="./checkpoint.pth"
+        checkpoint_path="./checkpoint/checkpoint_wrn34.pth"
     )
 
     # trainer = NormalTrainer(
@@ -353,4 +396,4 @@ if __name__ == '__main__':
     #     checkpoint_path="./checkpoint.pth"
     # )
 
-    trainer.train("./test_resnet")
+    trainer.train("./trained_models/robust_wrn34")
