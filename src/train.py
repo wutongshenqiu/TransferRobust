@@ -356,14 +356,14 @@ if __name__ == '__main__':
     # model = wrn34_10(num_classes=100)
 
     # tranform learning
-    model = wrn34_10(num_classes=10)
-    trainer = CIFARTLTrainer(
-        teacher_model_path="./trained_models/cifar100_wrn34_10-best",
-        model=model,
-        train_loader=get_cifar_training_dataloader("cifar10"),
-        test_loader=get_cifar_testing_dataloader("cifar10"),
-        checkpoint_path="./checkpoint.pth"
-    )
+    # model = wrn34_10(num_classes=10)
+    # trainer = CIFARTLTrainer(
+    #     teacher_model_path="./trained_models/cifar100_wrn34_10-best",
+    #     model=model,
+    #     train_loader=get_cifar_training_dataloader("cifar10"),
+    #     test_loader=get_cifar_testing_dataloader("cifar10"),
+    #     checkpoint_path="./checkpoint.pth"
+    # )
 
     # fixme
     # still have bugs

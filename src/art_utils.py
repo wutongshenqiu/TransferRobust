@@ -1,4 +1,4 @@
-from art.attacks.evasion import ProjectedGradientDescent
+from art.attacks.evasion import ProjectedGradientDescent, CarliniL2Method, CarliniLInfMethod
 from art import attacks
 from art.estimators.classification import PyTorchClassifier
 
