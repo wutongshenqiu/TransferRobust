@@ -35,10 +35,10 @@ class BaseTrainer:
             self._checkpoint_path = checkpoint_path
             if os.path.exists(checkpoint_path):
                 self._load_from_checkpoint(checkpoint_path)
-        else:
-            self.start_epoch = 1
-            # best accuracy of current model
-            self.best_acc = 0
+            else:
+                self.start_epoch = 1
+                # best accuracy of current model
+                self.best_acc = 0
 
         print("initialize finished")
         print(f"parameters: ")
@@ -166,7 +166,7 @@ class BaseTrainer:
     def current_lr(self):
         return self.optimizer.param_groups[0].get('lr')
 
-    def _save_checkpoint(self, save_path, current_epoch, best_acc):
+    def _save_checkpoint(self, current_epoch, best_acc):
         model_weights = self.model.state_dict()
         optimizer = self.optimizer.state_dict()
 
