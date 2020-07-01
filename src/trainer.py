@@ -94,7 +94,7 @@ class BaseTrainer:
         raise NotImplementedError("must overwrite method `step_epoch`")
 
     def test(self):
-        return evaluate_accuracy(self.model, self._test_loader, self._device, debug=True)
+        return evaluate_accuracy(self.model, self._test_loader, self._device)
 
     def _init_dataloader(self, train_loader, test_loader) -> None:
         self._test_loader = test_loader
