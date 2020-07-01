@@ -1,7 +1,6 @@
-from typing import Dict, Any
+from typing import Dict, Any, Tuple
 import os
 
-import numpy
 import torchvision
 import torchvision.transforms as transforms
 from torch.utils.data import DataLoader
@@ -12,6 +11,8 @@ from torch.nn import Module
 import numpy as np
 import matplotlib.pyplot as plt
 import json
+
+from config import settings
 
 
 DATA_DIR = "../../dataset"
@@ -29,19 +30,35 @@ MNIST_TRAINING_STD = 0.3081
 MNIST_TRAINING_MEAN = 0.1307
 
 
-def get_cifar_training_dataloader(dataset, batch_size=128, num_workers=4, shuffle=True, normalize=True):
+def clamp(t: Tensor, lower_limit, upper_limit):
+    return torch.max(torch.min(t, upper_limit), lower_limit)
 
+
+def get_mean_and_std(dataset: str = settings.dataset_name) -> Tuple[Tuple, Tuple]:
     if dataset == "cifar100":
         mean = CIFAR100_TRAIN_MEAN
         std = CIFAR100_TRAIN_STD
-        _data = torchvision.datasets.CIFAR100
     elif dataset == "cifar10":
         mean = CIFAR10_TRAIN_MEAN
         std = CIFAR10_TRAIN_STD
+    else:
+        raise ValueError(f'dataset "{dataset}" is not supported!')
+
+    return mean, std
+
+
+def get_cifar_train_dataloader(dataset=settings.dataset_name, batch_size=settings.batch_size,
+                               num_workers=settings.num_worker, shuffle=True, normalize=True):
+
+    if dataset == "cifar100":
+        _data = torchvision.datasets.CIFAR100
+    elif dataset == "cifar10":
         _data = torchvision.datasets.CIFAR10
     else:
         raise ValueError(f'dataset "{dataset}" is not supported!')
-    
+
+    mean, std = get_mean_and_std(dataset=dataset)
+
     compose_list = [
         transforms.RandomCrop(32, padding=4),
         transforms.RandomHorizontalFlip(),
@@ -52,26 +69,25 @@ def get_cifar_training_dataloader(dataset, batch_size=128, num_workers=4, shuffl
         compose_list.append(transforms.Normalize(mean, std))
     transform_train = transforms.Compose(compose_list)
 
-    training_dataset = _data(root=os.path.join(DATA_DIR, "CIFAR"), train=True, download=True,
-                             transform=transform_train)
+    train_dataset = _data(root=os.path.join(DATA_DIR, "CIFAR"), train=True, download=True,
+                          transform=transform_train)
 
-    training_loader = DataLoader(training_dataset, shuffle=shuffle, num_workers=num_workers, batch_size=batch_size)
+    train_loader = DataLoader(train_dataset, shuffle=shuffle, num_workers=num_workers, batch_size=batch_size)
 
-    return training_loader
+    return train_loader
 
 
-def get_cifar_testing_dataloader(dataset, batch_size=128, num_workers=4, shuffle=False, normalize=True):
+def get_cifar_test_dataloader(dataset=settings.dataset_name, batch_size=settings.batch_size,
+                               num_workers=settings.num_worker, shuffle=False, normalize=True):
 
     if dataset == "cifar100":
-        mean = CIFAR100_TRAIN_MEAN
-        std = CIFAR100_TRAIN_STD
         _data = torchvision.datasets.CIFAR100
     elif dataset == "cifar10":
-        mean = CIFAR10_TRAIN_MEAN
-        std = CIFAR10_TRAIN_STD
         _data = torchvision.datasets.CIFAR10
     else:
         raise ValueError(f'dataset "{dataset}" is not supported!')
+
+    mean, std = get_mean_and_std(dataset=dataset)
     
     compose_list = [
         transforms.ToTensor(),
@@ -80,12 +96,12 @@ def get_cifar_testing_dataloader(dataset, batch_size=128, num_workers=4, shuffle
         compose_list.append(transforms.Normalize(mean, std))
     transform_test = transforms.Compose(compose_list)
     test = _data(root=os.path.join(DATA_DIR, "CIFAR"), train=False, download=True, transform=transform_test)
-    testing_loader = DataLoader(test, shuffle=shuffle, num_workers=num_workers, batch_size=batch_size)
+    test_loader = DataLoader(test, shuffle=shuffle, num_workers=num_workers, batch_size=batch_size)
 
-    return testing_loader
+    return test_loader
 
 
-def get_mnist_training_data(batch_size=128, num_workers=4, normalize=True):
+def get_mnist_train_data(batch_size=128, num_workers=4, normalize=True):
     compose_list = [
         transforms.ToTensor(),
     ]
@@ -93,14 +109,14 @@ def get_mnist_training_data(batch_size=128, num_workers=4, normalize=True):
         compose_list.append(transforms.Normalize(MNIST_TRAINING_MEAN, MNIST_TRAINING_STD))
     transform = transforms.Compose(compose_list)
 
-    training_data = torchvision.datasets.MNIST(root=os.path.join(DATA_DIR, "MNIST"), train=True,
-                                               download=True, transform=transform)
-    training_loader = DataLoader(training_data, shuffle=True, num_workers=num_workers, batch_size=batch_size)
+    train_data = torchvision.datasets.MNIST(root=os.path.join(DATA_DIR, "MNIST"), train=True,
+                                            download=True, transform=transform)
+    train_loader = DataLoader(train_data, shuffle=True, num_workers=num_workers, batch_size=batch_size)
 
-    return training_loader
+    return train_loader
 
 
-def get_mnist_testing_data(batch_size=128, num_workers=4, normalize=True):
+def get_mnist_test_data(batch_size=128, num_workers=4, normalize=True):
     compose_list = [
         transforms.ToTensor(),
     ]
@@ -108,11 +124,11 @@ def get_mnist_testing_data(batch_size=128, num_workers=4, normalize=True):
         compose_list.append(transforms.Normalize(MNIST_TRAINING_MEAN, MNIST_TRAINING_STD))
     transform = transforms.Compose(compose_list)
 
-    testing_data = torchvision.datasets.MNIST(root=os.path.join(DATA_DIR, "MNIST"), train=False,
-                                              download=True, transform=transform)
-    testing_loader = DataLoader(testing_data, shuffle=False, num_workers=num_workers, batch_size=batch_size)
+    test_data = torchvision.datasets.MNIST(root=os.path.join(DATA_DIR, "MNIST"), train=False,
+                                           download=True, transform=transform)
+    test_loader = DataLoader(test_data, shuffle=False, num_workers=num_workers, batch_size=batch_size)
 
-    return testing_loader
+    return test_loader
 
 
 def evaluate_accuracy(model: Module, test_loader: DataLoader, device: torch.device, debug=False) -> float:
@@ -152,11 +168,11 @@ def compute_mean_std(cifar100_dataset):
         a tuple contains mean, std value of entire dataset
     """
 
-    data_r = numpy.dstack([cifar100_dataset[i][1][:, :, 0] for i in range(len(cifar100_dataset))])
-    data_g = numpy.dstack([cifar100_dataset[i][1][:, :, 1] for i in range(len(cifar100_dataset))])
-    data_b = numpy.dstack([cifar100_dataset[i][1][:, :, 2] for i in range(len(cifar100_dataset))])
-    mean = numpy.mean(data_r), numpy.mean(data_g), numpy.mean(data_b)
-    std = numpy.std(data_r), numpy.std(data_g), numpy.std(data_b)
+    data_r = np.dstack([cifar100_dataset[i][1][:, :, 0] for i in range(len(cifar100_dataset))])
+    data_g = np.dstack([cifar100_dataset[i][1][:, :, 1] for i in range(len(cifar100_dataset))])
+    data_b = np.dstack([cifar100_dataset[i][1][:, :, 2] for i in range(len(cifar100_dataset))])
+    mean = np.mean(data_r), np.mean(data_g), np.mean(data_b)
+    std = np.std(data_r), np.std(data_g), np.std(data_b)
 
     return mean, std
 

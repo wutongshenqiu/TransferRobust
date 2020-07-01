@@ -35,6 +35,16 @@ class Settings(BaseSettings):
     # whether use multiple GPUs
     parallelism: bool = False
 
+    dataset_name: str = None
+
+    @validator("dataset_name")
+    def check_dataset_name(cls, v):
+        if not v:
+            raise ValueError("`dataset_name` must be specified")
+        if v not in {"cifar10", "cifar100"}:
+            raise ValueError("`dataset_name` must be specified as `cifar10` or `cifar100`")
+        return v
+
     class Config:
         env_file = '.env'
 

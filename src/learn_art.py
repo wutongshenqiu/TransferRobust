@@ -1,6 +1,6 @@
 from models.resnet import resnet50, resnet34
 from models.wrn import wrn34_10
-from train import Trainer
+from trainer import Trainer
 from utils import get_cifar_training_dataloader, get_cifar_testing_dataloader, CIFAR10_TRAIN_MEAN, CIFAR10_TRAIN_STD, CIFAR100_TRAIN_MEAN, CIFAR100_TRAIN_STD
 from art_usage import test_attack
 

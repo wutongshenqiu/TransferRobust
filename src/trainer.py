@@ -13,7 +13,7 @@ from networks.resnet import resnet18, resnet34
 from networks.wrn import wrn34_10
 from config import settings
 from utils import WarmUpLR, evaluate_accuracy
-from art_utils import init_attacker, init_classifier, gen_adv
+from art_utils import init_attacker, init_classifier
 
 # if the batch_size and model structure is fixed, this may accelerate the training process
 torch.backends.cudnn.benchmark = True
@@ -31,8 +31,10 @@ class BaseTrainer:
         self._init_scheduler()
         self._init_criterion()
 
-        if checkpoint_path and os.path.exists(checkpoint_path):
-            self._load_from_checkpoint(checkpoint_path)
+        if checkpoint_path:
+            self._checkpoint_path = checkpoint_path
+            if os.path.exists(checkpoint_path):
+                self._load_from_checkpoint(checkpoint_path)
         else:
             self.start_epoch = 1
             # best accuracy of current model
@@ -83,7 +85,7 @@ class BaseTrainer:
                         best_acc = acc
                         self._save_best_model(save_path, ep, acc)
 
-            self._save_checkpoint(save_path, ep, best_acc)
+            self._save_checkpoint(ep, best_acc)
 
         print("finished training")
         print(f"best accuracy on test set: {best_acc}")
@@ -173,7 +175,7 @@ class BaseTrainer:
             "optimizer": optimizer,
             "current_epoch": current_epoch,
             "best_acc": best_acc
-        }, f"{os.path.join(os.path.dirname(save_path), 'checkpoint.pth')}")
+        }, f"{self._checkpoint_path}")
 
     def _load_from_checkpoint(self, checkpoint_path: str) -> None:
         checkpoint = torch.load(checkpoint_path)
@@ -350,26 +352,26 @@ class ARTTrainer(BaseADVTrainer):
 
 
 if __name__ == '__main__':
-    from utils import get_cifar_testing_dataloader, get_cifar_training_dataloader
+    from utils import get_cifar_test_dataloader, get_cifar_train_dataloader
     from art_utils import attack_params
 
-    # model = wrn34_10(num_classes=100)
+    model = wrn34_10(num_classes=100)
 
     # tranform learning
     # model = wrn34_10(num_classes=10)
     # trainer = CIFARTLTrainer(
     #     teacher_model_path="./trained_models/cifar100_wrn34_10-best",
     #     model=model,
-    #     train_loader=get_cifar_training_dataloader("cifar10"),
-    #     test_loader=get_cifar_testing_dataloader("cifar10"),
+    #     train_loader=get_cifar_train_dataloader("cifar10"),
+    #     test_loader=get_cifar_test_dataloader("cifar10"),
     #     checkpoint_path="./checkpoint.pth"
     # )
 
     # fixme
     # still have bugs
     # trainer = ARTTrainer(
-    #     model, get_cifar_training_dataloader("cifar10", normalize=False),
-    #     get_cifar_testing_dataloader("cifar10", normalize=False),
+    #     model, get_cifar_train_dataloader("cifar10", normalize=False),
+    #     get_cifar_test_dataloader("cifar10", normalize=False),
     #     attacker="ProjectedGradientDescent",
     #     params=attack_params.get("ProjectedGradientDescent"),
     #     dataset_mean=CIFAR10_TRAIN_MEAN,
@@ -377,23 +379,17 @@ if __name__ == '__main__':
     #     checkpoint_path="./checkpoint.pth"
     # )
 
-    from attack import PGDAttack, attack_params
+    from attack import LinfPGDAttack, attack_params
 
     trainer = ADVTrainer(
         # todo
         # !!! 这里不能使用 normalize，因为 attack 的实现里面没有考虑 normalize
         # 那ART训练又是为什么呢？
-        model, get_cifar_training_dataloader("cifar100", normalize=False),
-        get_cifar_testing_dataloader("cifar100", normalize=False),
-        attacker=PGDAttack,
+        model, get_cifar_train_dataloader(),
+        get_cifar_test_dataloader(),
+        attacker=LinfPGDAttack,
         params=attack_params.get("LinfPGDAttack"),
         checkpoint_path="./checkpoint/checkpoint_wrn34.pth"
     )
 
-    # trainer = NormalTrainer(
-    #     model, get_cifar_training_dataloader("cifar10"),
-    #     get_cifar_testing_dataloader("cifar10"),
-    #     checkpoint_path="./checkpoint.pth"
-    # )
-
-    trainer.train("./trained_models/robust_wrn34")
+    trainer.train("./trained_models/cifar100_robust_wrn34")

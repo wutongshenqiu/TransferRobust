@@ -4,7 +4,9 @@ from typing import Any, Callable, Union
 import torch
 from torch import Tensor
 import torch.nn as nn
-import numpy as np
+
+from config import settings
+from utils import get_mean_and_std, clamp
 
 
 attack_params = {
@@ -12,7 +14,7 @@ attack_params = {
         "random_init": 1,
         "epsilon": 8/255,
         "step_size": 2/255,
-        "num_steps": 7
+        "num_steps": 7,
     }
 }
 
@@ -23,6 +25,14 @@ class LinfPGDAttack:
                  random_init: int = True, epsilon=8/255, step_size=2/255, num_steps=20,
                  loss_function: Callable[[Any], Tensor] = nn.CrossEntropyLoss()
                  ):
+        dataset_mean, dataset_std = get_mean_and_std(settings.dataset_name)
+        mean = torch.tensor(dataset_mean).view(3, 1, 1).to(settings.device)
+        std = torch.tensor(dataset_std).view(3, 1, 1).to(settings.device)
+
+        clip_max = ((1 - mean) / std)
+        clip_min = ((0 - mean) / std)
+        epsilon = epsilon / std
+        step_size = step_size / std
 
         self.min = clip_min
         self.max = clip_max
@@ -55,8 +65,8 @@ class LinfPGDAttack:
 
             grad_sign = xt.grad.detach().sign()
             xt.data = xt.detach() + self.step_size * grad_sign
-            xt.data = torch.clamp(xt - x, -self.epsilon, self.epsilon) + x
-            xt.data = torch.clamp(xt.detach(), self.min, self.max)
+            xt.data = clamp(xt - x, -self.epsilon, self.epsilon) + x
+            xt.data = clamp(xt.detach(), self.min, self.max)
 
             xt.grad.data.zero_()
 
