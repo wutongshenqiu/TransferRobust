@@ -223,7 +223,7 @@ class CIFARTLTrainer(NormalTrainer):
 
     def _reshape_teacher_fc_layer(self, model, state_dict) -> None:
         state_dict["fc.weight"] = torch.rand_like(model.fc.weight)
-        if state_dict.get("fc.bias"):
+        if state_dict.get("fc.bias") is not None:
             state_dict["fc.bias"] = torch.rand_like(model.fc.bias)
 
     def _reinitialize_layers_weight(self, model: Module, layer_list: List[str]) -> None:
@@ -241,7 +241,7 @@ class CIFARTLTrainer(NormalTrainer):
                 p.requires_grad = True
 
         # print trainable layers
-        for name, param in model.named_modules():
+        for name, param in model.named_parameters():
             if param.requires_grad:
                 print(f"name: {name}, size: {param.size()}")
 

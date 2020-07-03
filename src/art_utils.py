@@ -39,6 +39,14 @@ def init_classifier(
     if not nb_classes:
         nb_classes = get_fc_out_features(model)
 
+    if not preprocessing:
+        if nb_classes == 10:
+            preprocessing = init_preprocessing("cifar10")
+        elif nb_classes == 100:
+            preprocessing = init_preprocessing("cifar100")
+        else:
+            raise ValueError("`nb_classes is not correct!`")
+
     classifier = PyTorchClassifier(
         model=model,
         preprocessing=preprocessing,
@@ -76,7 +84,7 @@ def evaluate_model_robustness(model: torch.nn.Module, x_test: np.ndarray, y_test
 
     predictions = classifier.predict(x_test)
     accuracy = np.sum(np.argmax(predictions, axis=1) == y_test) / len(y_test)
-    print(f"Accuracy on benign test examples: {accuracy * 100}")
+    print(f"Accuracy on benign test examples: {accuracy * 100:.3f}%")
 
     print(f"generate adversarial examples using attack: {attacker_name}")
     print("params for attack:")
@@ -91,7 +99,7 @@ def evaluate_model_robustness(model: torch.nn.Module, x_test: np.ndarray, y_test
 
     predictions = classifier.predict(x_test_adv)
     accuracy = np.sum(np.argmax(predictions, axis=1) == y_test) / len(y_test)
-    print(f"Accuracy on adversarial test examples: {accuracy * 100}")
+    print(f"Accuracy on adversarial test examples: {accuracy * 100:.2f}%")
 
     end = time()
 
@@ -133,5 +141,12 @@ attack_params = {
         "max_iter": 75,
         "batch_size": 128,
         "epsilon": 0.02
-    }
+    },
+    "FastGradientMethod": {
+        # xz tql
+        "eps": 8/255,
+        "eps_step": 2/255,
+        "batch_size": 128,
+        "num_random_init": 1
+    },
 }
