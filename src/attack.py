@@ -1,12 +1,11 @@
-from __future__ import print_function
-from typing import Any, Callable, Union
+from typing import Any, Callable, Dict
 
 import torch
 from torch import Tensor
 import torch.nn as nn
 
 from src import settings
-from utils import get_mean_and_std, clamp
+from utils import get_mean_and_std, clamp, evaluate_accuracy
 
 
 attack_params = {
@@ -22,15 +21,15 @@ attack_params = {
 class LinfPGDAttack:
 
     def __init__(self, model: torch.nn.Module, clip_min=0, clip_max=1,
-                 random_init: int = True, epsilon=8/255, step_size=2/255, num_steps=20,
+                 random_init: int = 1, epsilon=8/255, step_size=2/255, num_steps=20,
                  loss_function: Callable[[Any], Tensor] = nn.CrossEntropyLoss()
                  ):
         dataset_mean, dataset_std = get_mean_and_std(settings.dataset_name)
         mean = torch.tensor(dataset_mean).view(3, 1, 1).to(settings.device)
         std = torch.tensor(dataset_std).view(3, 1, 1).to(settings.device)
 
-        clip_max = ((1 - mean) / std)
-        clip_min = ((0 - mean) / std)
+        clip_max = ((clip_max - mean) / std)
+        clip_min = ((clip_min - mean) / std)
         epsilon = epsilon / std
         step_size = step_size / std
 
@@ -74,6 +73,28 @@ class LinfPGDAttack:
 
     def print_parameters(self):
         print(f"{self.__dict__}")
+
+
+def test_attack(model: nn.Module, test_loader, attacker, params: Dict, device: str = settings.device):
+    normal_acc = evaluate_accuracy(model, test_loader, device)
+    print(f"normal accuracy: {normal_acc}")
+    model.eval()
+    _attacker = attacker(model, **params)
+
+    correct = 0
+    for inputs, labels in test_loader:
+        inputs, labels = inputs.to(device), labels.to(device)
+        adv_inputs = _attacker.calc_perturbation(inputs, labels)
+        model.zero_grad()
+        with torch.no_grad():
+            _, y_hats = model(adv_inputs).max(1)
+            match = (y_hats == labels)
+            correct += len(match.nonzero())
+
+    print(f"adversarial accuracy: {100 * correct / len(test_loader.dataset):.3f}%")
+
+    model.train()
+
 
 
 if __name__ == '__main__':
