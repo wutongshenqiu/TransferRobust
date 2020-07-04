@@ -1,6 +1,10 @@
 from pydantic import BaseSettings, validator
 
 from typing import List
+from pathlib import PurePath
+
+
+ENV_PATH = PurePath(__file__).parent / "config.env"
 
 
 class Settings(BaseSettings):
@@ -49,6 +53,6 @@ class Settings(BaseSettings):
         env_file = '.env'
 
 
-settings = Settings(_env_file="config.env")
+settings = Settings(_env_file=ENV_PATH)
 
 print(settings.dict())

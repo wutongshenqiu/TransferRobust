@@ -5,7 +5,7 @@ import torch
 from torch import Tensor
 import torch.nn as nn
 
-from config import settings
+from src import settings
 from utils import get_mean_and_std, clamp
 
 
