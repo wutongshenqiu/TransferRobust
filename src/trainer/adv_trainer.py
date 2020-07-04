@@ -1,4 +1,5 @@
 from typing import Dict
+import warnings
 
 import torch
 from torch.nn.modules.module import Module
@@ -63,10 +64,12 @@ class ADVTrainer(BaseADVTrainer):
         return adv_inputs
 
 
+# fixme
 class ARTTrainer(BaseADVTrainer):
     def __init__(self, model: Module, train_loader: DataLoader,
                  test_loader: DataLoader, attacker: str, params: Dict,
                  dataset_mean, dataset_std, checkpoint_path: str = None):
+        warnings.warn("can not work well now!")
         super(ARTTrainer, self).__init__(model, train_loader, test_loader, attacker, params, checkpoint_path)
         self._init_normalize(dataset_mean, dataset_std)
 

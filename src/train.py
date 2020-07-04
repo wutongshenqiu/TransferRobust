@@ -2,7 +2,7 @@ import torch
 
 from networks.wrn import wrn34_10
 
-from trainer import ADVTrainer
+from trainer import ADVTrainer, RetrainTrainer
 
 # if the batch_size and model structure is fixed, this may accelerate the training process
 torch.backends.cudnn.benchmark = True
@@ -13,6 +13,7 @@ if __name__ == '__main__':
     from art_utils import attack_params
 
     model = wrn34_10(num_classes=100)
+    model.load_state_dict(torch.load())
 
     # tranform learning
     # model = wrn34_10(num_classes=10)
@@ -36,17 +37,26 @@ if __name__ == '__main__':
     #     checkpoint_path="./checkpoint.pth"
     # )
 
-    from attack import LinfPGDAttack, attack_params
+    # from attack import LinfPGDAttack, attack_params
+    #
+    # trainer = ADVTrainer(
+    #     # todo
+    #     # !!! 这里不能使用 normalize，因为 attack 的实现里面没有考虑 normalize
+    #     # 那ART训练又是为什么呢？
+    #     model, get_cifar_train_dataloader(),
+    #     get_cifar_test_dataloader(),
+    #     attacker=LinfPGDAttack,
+    #     params=attack_params.get("LinfPGDAttack"),
+    #     checkpoint_path="./checkpoint/checkpoint_wrn34.pth"
+    # )
 
-    trainer = ADVTrainer(
-        # todo
-        # !!! 这里不能使用 normalize，因为 attack 的实现里面没有考虑 normalize
-        # 那ART训练又是为什么呢？
-        model, get_cifar_train_dataloader(),
-        get_cifar_test_dataloader(),
-        attacker=LinfPGDAttack,
-        params=attack_params.get("LinfPGDAttack"),
-        checkpoint_path="./checkpoint/checkpoint_wrn34.pth"
+    # retrain
+    trainer = RetrainTrainer(
+        k=17,
+        model=model,
+        train_loader=get_cifar_train_dataloader("cifar10"),
+        test_loader=get_cifar_test_dataloader("cifar10"),
+        checkpoint_path="./checkpoint.pth"
     )
 
-    # trainer.train("./trained_models/cifar100_robust_wrn34")
+    # trainer.train("./trained_models/retrain_block1_cifar10_robust_wrn34")
