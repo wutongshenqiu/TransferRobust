@@ -13,6 +13,7 @@ class CIFARTLTrainer(NormalTrainer):
                  test_loader: DataLoader, checkpoint_path: str = None):
         teacher_state_dict = self._load_teacher_state_dict(teacher_model_path)
         self._reshape_teacher_fc_layer(model, teacher_state_dict)
+        model.load_state_dict(teacher_state_dict)
         self._reinitialize_layers_weight(model, ["fc"])
         self._freeze_untrained_layers(model, ["fc"])
         super(NormalTrainer, self).__init__(model, train_loader, test_loader, checkpoint_path)
@@ -28,7 +29,8 @@ class CIFARTLTrainer(NormalTrainer):
     def _reinitialize_layers_weight(self, model: Module, layer_list: List[str]) -> None:
         for layer in layer_list:
             _layer = getattr(model, layer)
-            _layer.reset_parameters()
+            if hasattr(_layer, "reset_parameters"):
+                _layer.reset_parameters()
 
     def _freeze_untrained_layers(self, model, trained_layers: List[str]) -> None:
         for p in model.parameters():

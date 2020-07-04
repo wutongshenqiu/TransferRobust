@@ -52,7 +52,6 @@ class RetrainTrainer(NormalTrainer):
                 print(f"name: {name}, size: {param.size()}")
 
 
-
 if __name__ == '__main__':
     from networks.wrn import wrn34_10
 

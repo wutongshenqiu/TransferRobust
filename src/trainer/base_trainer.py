@@ -139,7 +139,8 @@ class BaseTrainer:
             "total_epochs": self._train_epochs,
             "best_accuracy": accuracy
         }
-        with open(os.path.join(os.path.dirname(save_path), "info.json"), "w", encoding="utf8") as f:
+        suffix = save_path.split("/")[-1]
+        with open(os.path.join(os.path.dirname(save_path), f"{suffix}_info.json"), "w", encoding="utf8") as f:
             json.dump(info, f)
         torch.save(self.model.state_dict(), f"{save_path}-best")
 
