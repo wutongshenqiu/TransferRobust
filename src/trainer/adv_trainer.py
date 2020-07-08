@@ -57,7 +57,6 @@ class ADVTrainer(BaseADVTrainer):
         adv_inputs = self.attacker.calc_perturbation(inputs, labels)
         adv_inputs = adv_inputs.to(self._device)
 
-        # so disgusting, can't zero grad here
         # self.optimizer.zero_grad()
         self.model.train()
 
