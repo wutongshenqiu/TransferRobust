@@ -8,7 +8,7 @@ from trainer import ADVTrainer, WRN34Block
 
 
 class RobustPlusRegularizationTrainer(ADVTrainer):
-    def __init__(self, k: int, model: Module, train_loader: DataLoader,
+    def __init__(self, k: int, _lambda: float, model: Module, train_loader: DataLoader,
                  test_loader: DataLoader, attacker, params: Dict,
                  checkpoint_path: str = None):
         super(RobustPlusRegularizationTrainer, self).__init__(model, train_loader, test_loader,
@@ -16,6 +16,7 @@ class RobustPlusRegularizationTrainer(ADVTrainer):
         self._blocks = WRN34Block(model)
         self._register_forward_hook_to_k_block(k)
         self._hooked_features_list = []
+        self._lambda = _lambda
 
     def step_batch(self, inputs: torch.Tensor, labels: torch.Tensor):
         inputs, labels = inputs.to(self._device), labels.to(self._device)
@@ -26,11 +27,16 @@ class RobustPlusRegularizationTrainer(ADVTrainer):
 
         r_adv = self._hooked_features_list[0]
         r_clean = self._hooked_features_list[1]
-        regularization_term = torch.norm(r_adv - r_clean) * 0.005
+        # so stupid!
+        regularization_term = self._lambda * torch.norm(
+            (r_adv - r_clean).view(r_adv[0], -1),
+            dim=1
+        ).sum()
+        l_term = self.criterion(adv_outputs, labels)
         print(f"regularization: {regularization_term}")
         self._hooked_features_list.clear()
 
-        loss = self.criterion(adv_outputs, labels) + regularization_term
+        loss = l_term + regularization_term
 
         self.optimizer.zero_grad()
         loss.backward()
