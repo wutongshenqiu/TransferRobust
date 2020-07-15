@@ -6,8 +6,8 @@ from typing import Tuple, Dict, Optional
 
 import numpy as np
 
-from src import settings
-from utils import CIFAR100_TRAIN_MEAN, CIFAR100_TRAIN_STD, CIFAR10_TRAIN_MEAN, CIFAR10_TRAIN_STD, get_fc_out_features
+from config import settings
+from .data_utils import CIFAR100_TRAIN_MEAN, CIFAR100_TRAIN_STD, CIFAR10_TRAIN_MEAN, CIFAR10_TRAIN_STD, get_fc_out_features
 
 import torch.nn as nn
 import torch

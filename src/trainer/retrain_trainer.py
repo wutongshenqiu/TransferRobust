@@ -1,10 +1,9 @@
-from typing import List
-
 import torch
 from torch.nn.modules.module import Module
 from torch.utils.data import DataLoader
 
 from trainer import NormalTrainer
+from utils import logger
 
 
 class WRN34Block:
@@ -47,9 +46,10 @@ class RetrainTrainer(NormalTrainer):
             for p in block.parameters():
                 p.requires_grad = True
 
+        logger.debug("trainable layers")
         for name, param in self.model.named_parameters():
             if param.requires_grad:
-                print(f"name: {name}, size: {param.size()}")
+                logger.debug(f"name: {name}, size: {param.size()}")
 
 
 if __name__ == '__main__':

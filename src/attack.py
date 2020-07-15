@@ -4,7 +4,8 @@ import torch
 from torch import Tensor
 import torch.nn as nn
 
-from src import settings
+from config import settings
+from utils import logger
 from utils import get_mean_and_std, clamp, evaluate_accuracy
 
 
@@ -72,12 +73,22 @@ class LinfPGDAttack:
         return xt
 
     def print_parameters(self):
-        print(f"{self.__dict__}")
+        params = {
+            "min": self.min,
+            "max": self.max,
+            "epsilon": self.epsilon,
+            "step_size": self.step_size,
+            "num_steps": self.num_steps,
+            "random_init": self.random_init,
+        }
+        params_str = "\n".join([": ".join(map(str, item)) for item in params.items()])
+        logger.info(f"using attack: {type(self).__name__}")
+        logger.info(f"attack parameters: \n{params_str}")
 
 
 def test_attack(model: nn.Module, test_loader, attacker, params: Dict, device: str = settings.device):
     normal_acc = evaluate_accuracy(model, test_loader, device)
-    print(f"normal accuracy: {normal_acc}")
+    logger.info(f"normal accuracy: {normal_acc}")
     model.eval()
     _attacker = attacker(model, **params)
 
@@ -91,10 +102,9 @@ def test_attack(model: nn.Module, test_loader, attacker, params: Dict, device: s
             match = (y_hats == labels)
             correct += len(match.nonzero())
 
-    print(f"adversarial accuracy: {100 * correct / len(test_loader.dataset):.3f}%")
+    logger.info(f"adversarial accuracy: {100 * correct / len(test_loader.dataset):.3f}%")
 
     model.train()
-
 
 
 if __name__ == '__main__':

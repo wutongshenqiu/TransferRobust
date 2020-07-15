@@ -1,6 +1,6 @@
 from pydantic import BaseSettings, validator
 
-from typing import List
+from typing import List, Optional, Union
 from pathlib import PurePath
 
 
@@ -39,7 +39,7 @@ class Settings(BaseSettings):
     # whether use multiple GPUs
     parallelism: bool = False
 
-    dataset_name: str = None
+    dataset_name: str = "cifar10"
 
     @validator("dataset_name")
     def check_dataset_name(cls, v):
@@ -49,10 +49,18 @@ class Settings(BaseSettings):
             raise ValueError("`dataset_name` must be specified as `cifar10` or `cifar100`")
         return v
 
+    logger_name: str = "StreamHandler"
+    log_file: Optional[Union[str, PurePath]] = ENV_PATH.parent.parent / "logs/tmp.log"
+
+    @validator("logger_name")
+    def check_logger_name(cls, v):
+        if v not in {"StreamLogger", "FileLogger"}:
+            raise ValueError("unsupported logger type!")
+        return v
+
     class Config:
         env_file = '.env'
 
 
 settings = Settings(_env_file=ENV_PATH)
 
-print(settings.dict())

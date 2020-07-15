@@ -6,7 +6,7 @@ from torch.nn.modules.module import Module
 from torch.utils.data import DataLoader
 from torchvision import transforms
 
-from art_utils import init_attacker, init_classifier
+from utils import init_attacker, init_classifier, logger
 from trainer import BaseTrainer
 
 
@@ -28,7 +28,6 @@ class ADVTrainer(BaseADVTrainer):
         super(ADVTrainer, self).__init__(model, train_loader, test_loader, attacker, params, checkpoint_path)
 
     def _init_attacker(self, attacker, params):
-        print(f"robustness training with {type(attacker).__name__}")
         attacker = attacker(self.model, **params)
         attacker.print_parameters()
 
@@ -73,7 +72,7 @@ class ARTTrainer(BaseADVTrainer):
         self._init_normalize(dataset_mean, dataset_std)
 
     def _init_attacker(self, attacker, params):
-        print(f"robustness training with {attacker}")
+        logger.info(f"robustness training with {attacker}")
         classifier = init_classifier(model=self.model)
         return init_attacker(classifier, attacker, params)
 
