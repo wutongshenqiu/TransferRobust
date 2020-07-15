@@ -4,7 +4,7 @@ import torch
 from torch import Tensor
 import torch.nn as nn
 
-from src import settings
+from config import settings
 from utils import get_mean_and_std, clamp, evaluate_accuracy
 
 
@@ -72,7 +72,16 @@ class LinfPGDAttack:
         return xt
 
     def print_parameters(self):
-        print(f"{self.__dict__}")
+        # print(f"{self.__dict__}")
+        from pprint import pprint
+        pprint({
+            "min": self.min,
+            "max": self.max,
+            "epsilon": self.epsilon,
+            "step_size": self.step_size,
+            "num_steps": self.num_steps,
+            "random_init": self.random_init,
+        })
 
 
 def test_attack(model: nn.Module, test_loader, attacker, params: Dict, device: str = settings.device):

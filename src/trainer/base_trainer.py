@@ -8,7 +8,7 @@ from torch import optim
 from torch.nn.modules.module import Module
 from torch.utils.data import DataLoader
 
-from src import settings
+from config import settings
 from utils import WarmUpLR, evaluate_accuracy
 
 

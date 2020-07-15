@@ -2,7 +2,7 @@ import torch
 
 from networks.wrn import wrn34_10
 
-from trainer import ADVTrainer, RetrainTrainer
+from trainer import ADVTrainer, RetrainTrainer, RobustPlusRegularizationTrainer
 
 # if the batch_size and model structure is fixed, this may accelerate the training process
 torch.backends.cudnn.benchmark = True
@@ -10,10 +10,10 @@ torch.backends.cudnn.benchmark = True
 
 if __name__ == '__main__':
     from utils import get_cifar_test_dataloader, get_cifar_train_dataloader
-    from art_utils import attack_params
+    # from art_utils import attack_params
+    from attack import LinfPGDAttack, attack_params
 
-    model = wrn34_10(num_classes=100)
-    model.load_state_dict(torch.load())
+    model = wrn34_10(num_classes=10)
 
     # tranform learning
     # model = wrn34_10(num_classes=10)
@@ -37,7 +37,6 @@ if __name__ == '__main__':
     #     checkpoint_path="./checkpoint.pth"
     # )
 
-    # from attack import LinfPGDAttack, attack_params
     #
     # trainer = ADVTrainer(
     #     # todo
@@ -51,12 +50,29 @@ if __name__ == '__main__':
     # )
 
     # retrain
-    trainer = RetrainTrainer(
-        k=17,
+    # trainer = RetrainTrainer(
+    #     k=17,
+    #     model=model,
+        # train_loader=get_cifar_train_dataloader("cifar10"),
+        # test_loader=get_cifar_test_dataloader("cifar10"),
+    #     checkpoint_path="./checkpoint.pth"
+    # )
+
+    # robust plus regularization
+    _k = 6
+    _lambda = 0.01
+    trainer = RobustPlusRegularizationTrainer(
+        k=_k,
+        _lambda=_lambda,
         model=model,
         train_loader=get_cifar_train_dataloader("cifar10"),
         test_loader=get_cifar_test_dataloader("cifar10"),
-        checkpoint_path="./checkpoint.pth"
+        attacker=LinfPGDAttack,
+        params=attack_params.get("LinfPGDAttack"),
+        checkpoint_path=f"../checkpoint/cifar10_robust_plus_regularization_k{_k}_{_lambda}",
+        # use sub directory to support multi SummaryWriter
+        log_dir=f"../runs/lambda_{_lambda}",
     )
 
-    # trainer.train("./trained_models/retrain_block1_cifar10_robust_wrn34")
+
+    trainer.train(f"../trained_models/cifar10_robust_plus_regularization_k{_k}_{_lambda}")
