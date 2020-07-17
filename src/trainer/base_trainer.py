@@ -53,7 +53,7 @@ class BaseTrainer:
             logger.debug(f"lr: {self.current_lr}")
 
             training_acc, running_loss = 0, .0
-            start_time = time.process_time()
+            start_time = time.perf_counter()
 
             for index, data in enumerate(self._train_loader):
                 batch_running_loss, batch_training_acc = self.step_batch(data[0], data[1])
@@ -66,7 +66,7 @@ class BaseTrainer:
                     self.warm_up_scheduler.step()
 
                 if index % batch_number == batch_number - 1:
-                    end_time = time.process_time()
+                    end_time = time.perf_counter()
 
                     acc = self.test()
                     logger.info(

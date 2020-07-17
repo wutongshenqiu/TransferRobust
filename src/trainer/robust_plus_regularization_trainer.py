@@ -39,12 +39,13 @@ class RobustPlusRegularizationTrainer(ADVTrainer):
             (r_adv - r_clean).view(r_adv.shape[0], -1),
             dim=1
         ).sum()
+        logger.debug(f"batch: {self._current_batch}")
         logger.debug(f"d_loss: {regularization_term}")
 
         self._hooked_features_list.clear()
 
         l_term = self.criterion(adv_outputs, labels)
-        logger.debug(f"l_loss: {regularization_term}")
+        logger.debug(f"l_loss: {l_term}")
 
         # tensorboard draw
         self.writer.add_scalars(
