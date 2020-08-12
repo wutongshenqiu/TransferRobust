@@ -1,11 +1,11 @@
 import torch
 
-from networks.wrn import wrn34_10
+from .networks import wrn34_10
 
-from trainer import ADVTrainer, RetrainTrainer, CIFARTLTrainer
-from config import settings
-from utils import get_cifar_test_dataloader, get_cifar_train_dataloader, logger
-from attack import LinfPGDAttack, attack_params
+from .trainer import ADVTrainer, RetrainTrainer, CIFARTLTrainer
+from . import settings
+from .utils import get_cifar_test_dataloader, get_cifar_train_dataloader, logger
+from .attack import LinfPGDAttack, attack_params
 
 # if the batch_size and model structure is fixed, this may accelerate the training process
 torch.backends.cudnn.benchmark = True
@@ -58,4 +58,4 @@ if __name__ == '__main__':
     #     checkpoint_path="../checkpoint/checkpoint.pth"
     # )
 
-    # trainer.train("../trained_models/retrain_block1_cifar10_robust_wrn34")
+    trainer.train("../trained_models/retrain_block1_cifar10_robust_wrn34")

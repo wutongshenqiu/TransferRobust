@@ -8,8 +8,8 @@ from torch import optim
 from torch.nn.modules.module import Module
 from torch.utils.data import DataLoader
 
-from config import settings
-from utils import WarmUpLR, evaluate_accuracy, logger
+from src import settings
+from src.utils import WarmUpLR, evaluate_accuracy, logger
 
 
 class BaseTrainer:

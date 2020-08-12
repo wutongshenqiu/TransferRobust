@@ -8,6 +8,11 @@ ENV_PATH = PurePath(__file__).parent / "config.env"
 
 
 class Settings(BaseSettings):
+    root_dir: PurePath = PurePath(__file__).parent.parent
+    log_dir: PurePath = root_dir / "logs"
+    source_dir: PurePath = root_dir / "src"
+    logger_config_file: PurePath = source_dir / "logger_config.toml"
+
     device: str = "cuda: 0"
 
     momentum: float = 0.9
@@ -50,7 +55,7 @@ class Settings(BaseSettings):
         return v
 
     logger_name: str = "StreamHandler"
-    log_file: Optional[Union[str, PurePath]] = ENV_PATH.parent.parent / "logs/tmp.log"
+    log_file: Optional[Union[str, PurePath]] = log_dir / "log.log"
 
     @validator("logger_name")
     def check_logger_name(cls, v):

@@ -6,8 +6,8 @@ from torch.nn.modules.module import Module
 from torch.utils.data import DataLoader
 from torchvision import transforms
 
-from utils import init_attacker, init_classifier, logger
-from trainer import BaseTrainer
+from src.utils import init_attacker, init_classifier, logger
+from . import BaseTrainer
 
 
 class BaseADVTrainer(BaseTrainer):

@@ -5,8 +5,8 @@ from torch.nn.modules.module import Module
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
-from trainer import ADVTrainer, WRN34Block
-from utils import logger
+from . import ADVTrainer, WRN34Block
+from src.utils import logger
 
 
 class RobustPlusRegularizationTrainer(ADVTrainer):

@@ -12,10 +12,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import json
 
-from config import settings
+from src import settings
 
 
-DATA_DIR = "../../dataset"
+DATA_DIR = "../dataset"
 
 # default mean of cifar100
 CIFAR100_TRAIN_MEAN = (0.5070751592371323, 0.48654887331495095, 0.4409178433670343)
