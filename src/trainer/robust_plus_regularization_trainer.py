@@ -6,6 +6,7 @@ from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
 from trainer import ADVTrainer, WRN34Block
+from utils import logger
 
 
 
@@ -39,11 +40,14 @@ class RobustPlusRegularizationTrainer(ADVTrainer):
             (r_adv - r_clean).view(r_adv.shape[0], -1),
             dim=1
         ).sum()
+        logger.debug(f"d_loss: {regularization_term}")
+
         self._hooked_features_list.clear()
 
         l_term = self.criterion(adv_outputs, labels)
-        # print(f"regularization: {regularization_term}")
+        logger.debug(f"l_loss: {l_term}")
 
+        # tensorboard draw
         self.writer.add_scalars(
             f"lambda_{self._lambda}",
             {
@@ -75,18 +79,13 @@ class RobustPlusRegularizationTrainer(ADVTrainer):
 
     def _register_forward_hook_to_k_block(self, k):
         assert 1 <= k <= 17
-        self._first = True
-        block = getattr(self._blocks, f"block{18-k}")
+        block = getattr(self._blocks, f"block{18 - k}")
         block[-1].register_forward_hook(self.get_layer_outputs)
 
     def get_layer_outputs(self, layer, inputs, outputs):
-        if self._first:
-            print(layer)
-            self._first = False
         if self.model.training:
             self._hooked_features_list.append(outputs.clone().detach())
 
-    
     def _save_checkpoint(self, current_epoch, best_acc):
         model_weights = self.model.state_dict()
         optimizer = self.optimizer.state_dict()

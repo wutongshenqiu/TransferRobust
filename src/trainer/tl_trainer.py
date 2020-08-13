@@ -5,6 +5,7 @@ from torch.nn.modules.module import Module
 from torch.utils.data import DataLoader
 
 from trainer import NormalTrainer
+from utils import logger
 
 
 class CIFARTLTrainer(NormalTrainer):
@@ -42,6 +43,7 @@ class CIFARTLTrainer(NormalTrainer):
                 p.requires_grad = True
 
         # print trainable layers
+        logger.debug("trainable layers")
         for name, param in model.named_parameters():
             if param.requires_grad:
-                print(f"name: {name}, size: {param.size()}")
+                logger.debug(f"name: {name}, size: {param.size()}")

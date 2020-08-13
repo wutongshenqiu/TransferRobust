@@ -9,13 +9,13 @@ from torch.nn.modules.module import Module
 from torch.utils.data import DataLoader
 
 from config import settings
-from utils import WarmUpLR, evaluate_accuracy
+from utils import WarmUpLR, evaluate_accuracy, logger
 
 
 class BaseTrainer:
     def __init__(self, model: Module, train_loader: DataLoader,
                  test_loader: DataLoader, checkpoint_path: str = None):
-        print("initialize trainer")
+        logger.info("initialize trainer")
         # can not change the order
         self._init_hyperparameters()
         self._init_model(model)
@@ -33,8 +33,7 @@ class BaseTrainer:
                 # best accuracy of current model
                 self.best_acc = 0
 
-        print("initialize finished")
-        print(f"parameters: ")
+        logger.info("initialize finished")
         self.print_parameters()
 
     def train(self, save_path):
@@ -42,19 +41,19 @@ class BaseTrainer:
         best_acc = self.best_acc
         start_epoch = self.start_epoch
 
-        print(f"starting epoch: {start_epoch}")
-        print(f"start lr: {self.current_lr}")
-        print(f"best accuracy: {best_acc}")
+        logger.info(f"starting epoch: {start_epoch}")
+        logger.info(f"start lr: {self.current_lr}")
+        logger.info(f"best accuracy: {best_acc}")
 
         for ep in range(start_epoch, self._train_epochs + 1):
 
             self._adjust_lr(ep)
 
             # show current learning rate
-            print(f"lr: {self.current_lr}")
+            logger.debug(f"lr: {self.current_lr}")
 
             training_acc, running_loss = 0, .0
-            start_time = time.process_time()
+            start_time = time.perf_counter()
 
             for index, data in enumerate(self._train_loader):
                 batch_running_loss, batch_training_acc = self.step_batch(data[0], data[1])
@@ -67,10 +66,10 @@ class BaseTrainer:
                     self.warm_up_scheduler.step()
 
                 if index % batch_number == batch_number - 1:
-                    end_time = time.process_time()
+                    end_time = time.perf_counter()
 
                     acc = self.test()
-                    print(
+                    logger.info(
                         f"epoch: {ep}   loss: {(running_loss / batch_number):.6f}   train accuracy: {training_acc / batch_number}   "
                         f"test accuracy: {acc}   time: {end_time - start_time:.2f}s")
 
@@ -80,8 +79,8 @@ class BaseTrainer:
 
             self._save_checkpoint(ep, best_acc)
 
-        print("finished training")
-        print(f"best accuracy on test set: {best_acc}")
+        logger.info("finished training")
+        logger.info(f"best accuracy on test set: {best_acc}")
 
     def step_batch(self, inputs: torch.Tensor, labels: torch.Tensor) -> Tuple[float, float]:
         raise NotImplementedError("must overwrite method `step_epoch`")
@@ -128,9 +127,9 @@ class BaseTrainer:
             "optimizer": str(self.optimizer),
             "criterion": str(self.criterion)
         }
+        params_str = "\n".join([": ".join(item) for item in params.items()])
 
-        for key, value in params.items():
-            print(f"{key}: {value}")
+        logger.info(f"training parameters: \n{params_str}")
 
     def _save_best_model(self, save_path, current_epochs, accuracy):
         """save best model with current info"""
