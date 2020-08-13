@@ -120,22 +120,27 @@ def parseval_wrn34_10(num_classes=10):
 
 
 class ParsevalRetrainTrainer(RetrainTrainer):
-    def __init__(self, k: int, model: Module, train_loader: DataLoader,
+    def __init__(self, beta: float, k: int, model: Module, train_loader: DataLoader,
                  test_loader: DataLoader, checkpoint_path: str = None):
         """initialize retrain trainer
 
         Args:
-            k: the last k layers which will be retrained
+            beta: retraction parameter
+            k: the last k blocks which will be retrained
         """
         super(ParsevalRetrainTrainer, self).__init__(k, model, train_loader, test_loader, checkpoint_path)
         self._gather_regularization_layers(k)
+        self._beta = beta
 
     def step_batch(self, inputs: torch.Tensor, labels: torch.Tensor) -> Tuple[float, float]:
         inputs, labels = inputs.to(self._device), labels.to(self._device)
         self.optimizer.zero_grad()
 
         outputs = self.model(inputs)
-        loss = self.criterion(outputs, labels) + self._regularization_constrain()
+
+        constrain_term = self._regularization_constrain()
+        logger.debug(f"batch constrain: {constrain_term}")
+        loss = self.criterion(outputs, labels) + (self._beta / 2) * constrain_term
         loss.backward()
         self.optimizer.step()
 
@@ -145,13 +150,21 @@ class ParsevalRetrainTrainer(RetrainTrainer):
         return batch_running_loss, batch_training_acc
 
     def _regularization_constrain(self) -> torch.Tensor:
-        pass
+        return sum(
+            map(self._fully_connect_constrain, self._layers_needed_regularization["fc"])
+        ) + sum(
+            map(self._convolutional_constrain, self._layers_needed_regularization["conv"])
+        )
 
     def _fully_connect_constrain(self, layer: nn.Linear) -> torch.Tensor:
         # weight matrix * transpose of weight matrix
         wwt = torch.matmul(layer.weight, layer.weight.T)
         identity_matrix = torch.eye(wwt.shape[0])
-        return torch.norm(wwt - identity_matrix)
+
+        constrain_term = torch.norm(wwt - identity_matrix)
+        logger.debug(f"fully connect constrain: {constrain_term}")
+
+        return constrain_term
 
     def _convolutional_constrain(self, layer: nn.Conv2d) -> torch.Tensor:
         def calculate_scaling(kernel_size: Tuple[int, ...], stride: Tuple[int, ...]):
@@ -161,9 +174,18 @@ class ParsevalRetrainTrainer(RetrainTrainer):
 
             return scaling
 
+        # flatten convolutional layer to c_out * (c_in * kernel_size) matrix
+        flatten_matrix = layer.weight.view(layer.out_channels, -1)
+        # weight matrix * transpose of weight matrix
+        wwt = torch.matmul(flatten_matrix, flatten_matrix.T)
+
         scaling = calculate_scaling(layer.kernel_size, layer.stride)
-        # todo
-        # how to flatten convolutional layer to matrix
+        scaling_identity_matrix = torch.eye(wwt.shape[0]) / scaling
+
+        constrain_term = torch.norm(wwt - scaling_identity_matrix)
+        logger.debug(f"convolutional constrain: {constrain_term}")
+
+        return constrain_term
 
     def _gather_regularization_layers(self, k):
         """gather conv/fc layers in trainable layers to facilitate calculating regularization
