@@ -33,7 +33,7 @@ class RetrainTrainer(NormalTrainer):
         """initialize retrain trainer
 
         Args:
-            k: the last k layers which will be retrained
+            k: the last k blocks which will be retrained
         """
         super(RetrainTrainer, self).__init__(model, train_loader, test_loader, checkpoint_path)
         self._blocks = WRN34Block(model)
