@@ -144,7 +144,16 @@ class ParsevalRetrainTrainer(RetrainTrainer):
 
         return batch_running_loss, batch_training_acc
 
-    def _regularization_constrain(self, layer: nn.Conv2d) -> torch.Tensor:
+    def _regularization_constrain(self) -> torch.Tensor:
+        pass
+
+    def _fully_connect_constrain(self, layer: nn.Linear) -> torch.Tensor:
+        # weight matrix * transpose of weight matrix
+        wwt = torch.matmul(layer.weight, layer.weight.T)
+        identity_matrix = torch.eye(wwt.shape[0])
+        return torch.norm(wwt - identity_matrix)
+
+    def _convolutional_constrain(self, layer: nn.Conv2d) -> torch.Tensor:
         def calculate_scaling(kernel_size: Tuple[int, ...], stride: Tuple[int, ...]):
             scaling = 1
             for a, b in zip(kernel_size, stride):
@@ -155,15 +164,6 @@ class ParsevalRetrainTrainer(RetrainTrainer):
         scaling = calculate_scaling(layer.kernel_size, layer.stride)
         # todo
         # how to flatten convolutional layer to matrix
-
-    def _fully_connect_constrain(self, layer: nn.Linear) -> torch.Tensor:
-        # weight matrix * transpose of weight matrix
-        wwt = torch.matmul(layer.weight, layer.weight.T)
-        identity_matrix = torch.eye(wwt.shape[0])
-        return torch.norm(wwt - identity_matrix)
-
-    def _convolutional_constrain(self) -> torch.Tensor:
-        raise NotImplementedError
 
     def _gather_regularization_layers(self, k):
         """gather conv/fc layers in trainable layers to facilitate calculating regularization
