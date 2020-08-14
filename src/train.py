@@ -15,7 +15,7 @@ torch.backends.cudnn.benchmark = True
 
 if __name__ == '__main__':
     logger.info(settings)
-    model = parseval_wrn34_10(num_classes=10)
+
     # tranform learning
     # model = wrn34_10(num_classes=10)
     # trainer = CIFARTLTrainer(
@@ -60,15 +60,20 @@ if __name__ == '__main__':
     #     checkpoint_path="./checkpoint/retrain_cifar10_robust_plus_regularization_k6_1.pth"
     # )
 
-    # model.load_state_dict(torch.load("./trained_models/cifar10_robust_plus_regularization_k6_1-best", map_location=settings.device))
+    # retrain blocks
+    k = 6
+    model = parseval_wrn34_10(k=k, num_classes=10)
+    teacher_model_path = f"./trained_models/cifar10_robust_plus_regularization_k{k}_1-best"
+    model.load_state_dict(torch.load(teacher_model_path, map_location=settings.device))
+    logger.debug(f"teacher model: {teacher_model_path}")
     # parseval retrain
     trainer = ParsevalRetrainTrainer(
         beta=0.0003,
-        k=6,
+        k=k,
         model=model,
         train_loader=get_cifar_train_dataloader(),
         test_loader=get_cifar_test_dataloader(),
-        checkpoint_path="./checkpoint/checkpoint_parseval_retrain.pth"
+        checkpoint_path=f"./checkpoint/parseval_retrain_cifar10_robust_plus_regularization_k{k}_1.pth"
     )
 
     # robust plus regularization

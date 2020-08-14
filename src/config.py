@@ -55,7 +55,7 @@ class Settings(BaseSettings):
         return v
 
     logger_name: str = "StreamHandler"
-    log_file: Optional[Union[str, PurePath]] = log_dir / "log.log"
+    log_file: Union[str, PurePath] = log_dir / "parseval_retrain_k6_1.log"
 
     @validator("logger_name")
     def check_logger_name(cls, v):
@@ -68,4 +68,3 @@ class Settings(BaseSettings):
 
 
 settings = Settings(_env_file=ENV_PATH)
-
