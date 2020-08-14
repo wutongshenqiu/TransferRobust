@@ -1,6 +1,9 @@
-"""questions
-1. 是否需要加上固定的层
-2. residual layer 这个应该是 \beta_1 f(x) + \beta_2 x
+"""parseval training
+
+Annotations:
+    1. residual layer: f(x) + x -> 0.5x + 0.5f(x)
+    2. fully connect layer: ||W * W^T - I||^2
+    3. convolution layer: ||W * W^T - I / scaling||^2
 """
 
 from typing import Tuple, Union
@@ -160,9 +163,9 @@ class ParsevalRetrainTrainer(RetrainTrainer):
     def _fully_connect_constrain(self, layer: nn.Linear) -> torch.Tensor:
         # weight matrix * transpose of weight matrix
         wwt = torch.matmul(layer.weight, layer.weight.T)
-        identity_matrix = torch.eye(wwt.shape[0]).to(settings.device)
+        identity_matrix = torch.eye(wwt.shape[0]).to(self._device)
 
-        constrain_term = torch.norm(wwt - identity_matrix)
+        constrain_term = torch.norm(wwt - identity_matrix) ** 2
         # logger.debug(f"fully connect constrain: {constrain_term}")
 
         return constrain_term
@@ -182,9 +185,9 @@ class ParsevalRetrainTrainer(RetrainTrainer):
 
         scaling = calculate_scaling(layer.kernel_size, layer.stride)
         scaling_identity_matrix = torch.eye(wwt.shape[0]) / scaling
-        scaling_identity_matrix = scaling_identity_matrix.to(settings.device)
-        
-        constrain_term = torch.norm(wwt - scaling_identity_matrix)
+        scaling_identity_matrix = scaling_identity_matrix.to(self._device)
+
+        constrain_term = torch.norm(wwt - scaling_identity_matrix) ** 2
         # logger.debug(f"convolutional constrain: {constrain_term}")
 
         return constrain_term

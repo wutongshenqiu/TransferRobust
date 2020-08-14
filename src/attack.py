@@ -123,14 +123,15 @@ if __name__ == '__main__':
         "step_size": 2/255,
         "num_steps": 20,
     }
+    test_loader = get_cifar_test_dataloader("cifar10")
+    
     result = {}
-    for i in [1, 0.1, 0.05, 0.01]:
+    for i in [0.1, 1]:
         model = parseval_wrn34_10(num_classes=10)
         model_path = f"./trained_models/parseval_retrain_cifar10_robust_plus_regularization_k6_{i}-best"
         logger.debug(f"load from `{model_path}`")
         model.load_state_dict(torch.load(model_path, map_location=settings.device))
         model.to(settings.device)
-        test_loader = get_cifar_test_dataloader("cifar10")
         start_time = time.perf_counter()
         acc = test_attack(model, test_loader, LinfPGDAttack, params)
         end_time = time.perf_counter()
