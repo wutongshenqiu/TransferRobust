@@ -35,7 +35,7 @@ if __name__ == '__main__':
     #     params=attack_params.get("ProjectedGradientDescent"),
     #     dataset_mean=CIFAR10_TRAIN_MEAN,
     #     dataset_std=CIFAR10_TRAIN_STD,
-    #     checkpoint_path="../checkpoint/checkpoint.pth"
+    #     checkpoint_path="./checkpoint/checkpoint.pth"
     # )
 
     #
@@ -47,20 +47,20 @@ if __name__ == '__main__':
     #     get_cifar_test_dataloader(),
     #     attacker=LinfPGDAttack,
     #     params=attack_params.get("LinfPGDAttack"),
-    #     checkpoint_path="../checkpoint/checkpoint_wrn34.pth"
+    #     checkpoint_path="./checkpoint/checkpoint_wrn34.pth"
     # )
 
     # retrain
-    # model.load_state_dict(torch.load("../trained_models/cifar10_robust_plus_regularization_k6_1-best", map_location=settings.device))
+    # model.load_state_dict(torch.load("./trained_models/cifar10_robust_plus_regularization_k6_1-best", map_location=settings.device))
     # trainer = RetrainTrainer(
     #     k=6,
     #     model=model,
     #     train_loader=get_cifar_train_dataloader("cifar10"),
     #     test_loader=get_cifar_test_dataloader("cifar10"),
-    #     checkpoint_path="../checkpoint/retrain_cifar10_robust_plus_regularization_k6_1.pth"
+    #     checkpoint_path="./checkpoint/retrain_cifar10_robust_plus_regularization_k6_1.pth"
     # )
 
-    # model.load_state_dict(torch.load("../trained_models/cifar10_robust_plus_regularization_k6_1-best", map_location=settings.device))
+    # model.load_state_dict(torch.load("./trained_models/cifar10_robust_plus_regularization_k6_1-best", map_location=settings.device))
     # parseval retrain
     trainer = ParsevalRetrainTrainer(
         beta=0.0003,
@@ -68,7 +68,7 @@ if __name__ == '__main__':
         model=model,
         train_loader=get_cifar_train_dataloader(),
         test_loader=get_cifar_test_dataloader(),
-        checkpoint_path="../checkpoint/checkpoint_parseval_retrain.pth"
+        checkpoint_path="./checkpoint/checkpoint_parseval_retrain.pth"
     )
 
     # robust plus regularization
@@ -82,9 +82,9 @@ if __name__ == '__main__':
     #     test_loader=get_cifar_test_dataloader("cifar10"),
     #     attacker=LinfPGDAttack,
     #     params=attack_params.get("LinfPGDAttack"),
-    #     checkpoint_path=f"../checkpoint/cifar10_robust_plus_regularization_k{_k}_{_lambda}",
+    #     checkpoint_path=f"./checkpoint/cifar10_robust_plus_regularization_k{_k}_{_lambda}",
     #     # use sub directory to support multi SummaryWriter
-    #     log_dir=f"../runs/lambda_{_lambda}",
+    #     log_dir=f"./runs/lambda_{_lambda}",
     # )
 
-    trainer.train("../trained_models/parseval_retrain_cifar10_robust_plus_regularization_k6_1")
+    trainer.train("./trained_models/parseval_retrain_cifar10_robust_plus_regularization_k6_1")

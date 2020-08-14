@@ -159,7 +159,7 @@ class ParsevalRetrainTrainer(RetrainTrainer):
     def _fully_connect_constrain(self, layer: nn.Linear) -> torch.Tensor:
         # weight matrix * transpose of weight matrix
         wwt = torch.matmul(layer.weight, layer.weight.T)
-        identity_matrix = torch.eye(wwt.shape[0])
+        identity_matrix = torch.eye(wwt.shape[0]).to(self._device)
 
         constrain_term = torch.norm(wwt - identity_matrix)
         logger.debug(f"fully connect constrain: {constrain_term}")
@@ -181,6 +181,7 @@ class ParsevalRetrainTrainer(RetrainTrainer):
 
         scaling = calculate_scaling(layer.kernel_size, layer.stride)
         scaling_identity_matrix = torch.eye(wwt.shape[0]) / scaling
+        scaling_identity_matrix = scaling_identity_matrix.to(self._device)
 
         constrain_term = torch.norm(wwt - scaling_identity_matrix)
         logger.debug(f"convolutional constrain: {constrain_term}")
