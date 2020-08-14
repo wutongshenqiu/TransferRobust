@@ -1,20 +1,23 @@
 import torch
 
-from networks.wrn import wrn34_10
+from .networks import wrn34_10
 
-from trainer import ADVTrainer, RetrainTrainer, CIFARTLTrainer, RobustPlusRegularizationTrainer
-from config import settings
-from utils import get_cifar_test_dataloader, get_cifar_train_dataloader, logger
-from attack import LinfPGDAttack, attack_params
+from .trainer import (ADVTrainer, RetrainTrainer,
+                      CIFARTLTrainer, RobustPlusRegularizationTrainer,
+                      ParsevalRetrainTrainer, parseval_wrn34_10)
+
+from . import settings
+from .utils import get_cifar_test_dataloader, get_cifar_train_dataloader, logger
+from .attack import LinfPGDAttack, attack_params
 
 # if the batch_size and model structure is fixed, this may accelerate the training process
 torch.backends.cudnn.benchmark = True
 
-
 if __name__ == '__main__':
     import time
+    time.sleep(10800)
     logger.info(settings)
-    model = wrn34_10(num_classes=10)
+    model = parseval_wrn34_10(num_classes=10)
     # tranform learning
     # model = wrn34_10(num_classes=10)
     # trainer = CIFARTLTrainer(
@@ -50,13 +53,24 @@ if __name__ == '__main__':
     # )
 
     # retrain
-    model.load_state_dict(torch.load("../trained_models/cifar10_robust_plus_regularization_k6_1-best", map_location=settings.device))
-    trainer = RetrainTrainer(
+    # model.load_state_dict(torch.load("../trained_models/cifar10_robust_plus_regularization_k6_1-best", map_location=settings.device))
+    # trainer = RetrainTrainer(
+    #     k=6,
+    #     model=model,
+    #     train_loader=get_cifar_train_dataloader("cifar10"),
+    #     test_loader=get_cifar_test_dataloader("cifar10"),
+    #     checkpoint_path="../checkpoint/retrain_cifar10_robust_plus_regularization_k6_1.pth"
+    # )
+
+    model.load_state_dict(torch.load("./trained_models/cifar10_robust_plus_regularization_k6_0.01-best", map_location=settings.device))
+    # parseval retrain
+    trainer = ParsevalRetrainTrainer(
+        beta=0.0003,
         k=6,
         model=model,
-        train_loader=get_cifar_train_dataloader("cifar10"),
-        test_loader=get_cifar_test_dataloader("cifar10"),
-        checkpoint_path="../checkpoint/retrain_cifar10_robust_plus_regularization_k6_1.pth"
+        train_loader=get_cifar_train_dataloader(),
+        test_loader=get_cifar_test_dataloader(),
+        checkpoint_path="./checkpoint/parseval_retrain_cifar10_robust_plus_regularization_k6_0.01.pth"
     )
 
     # robust plus regularization
@@ -75,5 +89,4 @@ if __name__ == '__main__':
     #     log_dir=f"../runs/lambda_{_lambda}",
     # )
 
-
-    trainer.train(f"../trained_models/retrain_cifar10_robust_plus_regularization_k6_1")
+    trainer.train("./trained_models/parseval_retrain_cifar10_robust_plus_regularization_k6_0.01")

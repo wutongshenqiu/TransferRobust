@@ -12,7 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import json
 
-from config import settings
+from src import settings
 
 
 DATA_DIR = "~/dataset"

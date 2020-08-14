@@ -4,9 +4,8 @@ import torch
 from torch import Tensor
 import torch.nn as nn
 
-from config import settings
-from utils import logger
-from utils import get_mean_and_std, clamp, evaluate_accuracy
+from . import settings
+from .utils import logger, get_mean_and_std, clamp, evaluate_accuracy
 
 
 attack_params = {
@@ -86,11 +85,12 @@ class LinfPGDAttack:
         logger.info(f"attack parameters: \n{params_str}")
 
 
-def test_attack(model: nn.Module, test_loader, attacker, params: Dict, device: str = settings.device):
+def test_attack(model: nn.Module, test_loader, attacker, params: Dict, device: str = settings.device) -> float:
     normal_acc = evaluate_accuracy(model, test_loader, device)
     logger.info(f"normal accuracy: {normal_acc}")
     model.eval()
     _attacker = attacker(model, **params)
+    _attacker.print_parameters()
 
     correct = 0
     for inputs, labels in test_loader:
@@ -102,15 +102,19 @@ def test_attack(model: nn.Module, test_loader, attacker, params: Dict, device: s
             match = (y_hats == labels)
             correct += len(match.nonzero())
 
-    logger.info(f"adversarial accuracy: {100 * correct / len(test_loader.dataset):.3f}%")
+    adversarial_accuracy = correct / len(test_loader.dataset)
+    logger.info(f"adversarial accuracy: {100 * adversarial_accuracy:.3f}%")
 
     model.train()
 
+    return adversarial_accuracy
+
 
 if __name__ == '__main__':
-    from networks.wrn import wrn34_10
-    from utils import get_cifar_test_dataloader, get_cifar_train_dataloader
+    from .trainer import parseval_wrn34_10
+    from .utils import get_cifar_test_dataloader, get_cifar_train_dataloader
     import time
+    import json
 
 
     params = {
@@ -119,13 +123,22 @@ if __name__ == '__main__':
         "step_size": 2/255,
         "num_steps": 20,
     }
-    model = wrn34_10(num_classes=10)
-    model.load_state_dict(torch.load("../trained_models/retrain_cifar10_robust_plus_regularization_k6_1-best", map_location=settings.device))
-    model.to(settings.device)
-    test_loader = get_cifar_test_dataloader("cifar10")
-    start_time = time.perf_counter()
-    test_attack(model, test_loader, LinfPGDAttack, params)
-    end_time = time.perf_counter()
+    result = {}
+    for i in [1, 0.1, 0.05, 0.01]:
+        model = parseval_wrn34_10(num_classes=10)
+        model_path = f"./trained_models/parseval_retrain_cifar10_robust_plus_regularization_k6_{i}-best"
+        logger.debug(f"load from `{model_path}`")
+        model.load_state_dict(torch.load(model_path, map_location=settings.device))
+        model.to(settings.device)
+        test_loader = get_cifar_test_dataloader("cifar10")
+        start_time = time.perf_counter()
+        acc = test_attack(model, test_loader, LinfPGDAttack, params)
+        end_time = time.perf_counter()
 
-    logger.info(f"costing time: {end_time-start_time:.2f} secs")
+        logger.info(f"costing time: {end_time-start_time:.2f} secs")
 
+        result[i] = acc
+
+    logger.info(f"robustness result: {result}")
+    with open("parseval_cifar10_retrain_robust.json", "w") as f:
+        f.write(json.dumps(result))

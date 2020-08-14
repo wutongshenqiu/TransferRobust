@@ -4,8 +4,8 @@ import torch
 from torch.nn.modules.module import Module
 from torch.utils.data import DataLoader
 
-from trainer import NormalTrainer
-from utils import logger
+from . import NormalTrainer
+from src.utils import logger
 
 
 class CIFARTLTrainer(NormalTrainer):

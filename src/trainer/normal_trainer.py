@@ -4,7 +4,7 @@ import torch
 from torch.nn.modules.module import Module
 from torch.utils.data import DataLoader
 
-from trainer import BaseTrainer
+from . import BaseTrainer
 
 
 class NormalTrainer(BaseTrainer):

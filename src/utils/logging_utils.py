@@ -3,15 +3,13 @@ import toml
 import logging.config
 from pathlib import PurePath
 
-from config import settings
-
-CONFIG_PATH = str(PurePath(__file__).parent / "logging_config.toml")
+from src import settings
 
 
 def get_logger(logger_name: str, filename: str):
     assert logger_name in {"StreamLogger", "FileLogger"}
 
-    with open(CONFIG_PATH, "r", encoding="utf8") as f:
+    with open(settings.logger_config_file, "r", encoding="utf8") as f:
         config = toml.loads(f.read())
 
     config["handlers"]["file"]["filename"] = filename

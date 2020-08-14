@@ -5,8 +5,8 @@ from torch.nn.modules.module import Module
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
-from trainer import ADVTrainer, WRN34Block
-from utils import logger
+from . import ADVTrainer, WRN34Block
+from src.utils import logger
 
 
 
@@ -40,6 +40,7 @@ class RobustPlusRegularizationTrainer(ADVTrainer):
             (r_adv - r_clean).view(r_adv.shape[0], -1),
             dim=1
         ).sum()
+        logger.debug(f"batch: {self._current_batch}")
         logger.debug(f"d_loss: {regularization_term}")
 
         self._hooked_features_list.clear()

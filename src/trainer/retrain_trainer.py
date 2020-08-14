@@ -2,8 +2,8 @@ import torch
 from torch.nn.modules.module import Module
 from torch.utils.data import DataLoader
 
-from trainer import NormalTrainer
-from utils import logger
+from . import NormalTrainer
+from src.utils import logger
 
 
 class WRN34Block:
@@ -30,11 +30,16 @@ class WRN34Block:
 class RetrainTrainer(NormalTrainer):
     def __init__(self, k: int, model: Module, train_loader: DataLoader,
                  test_loader: DataLoader, checkpoint_path: str = None):
+        """initialize retrain trainer
+
+        Args:
+            k: the last k blocks which will be retrained
+        """
         super(RetrainTrainer, self).__init__(model, train_loader, test_loader, checkpoint_path)
         self._blocks = WRN34Block(model)
-        self.freeze_last_k_blocks(k)
+        self.reset_last_k_blocks(k)
 
-    def freeze_last_k_blocks(self, k):
+    def reset_last_k_blocks(self, k):
         for p in self.model.parameters():
             p.requires_grad = False
 
@@ -53,10 +58,8 @@ class RetrainTrainer(NormalTrainer):
 
 
 if __name__ == '__main__':
-    from networks.wrn import wrn34_10
+    from src.networks import wrn34_10
 
-    model = wrn34_10()
-
-    for layer in model.block1.layer:
-        print(layer)
+    model = WRN34Block(wrn34_10())
+    print(model.block15)
     # print(model)

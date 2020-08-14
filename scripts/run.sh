@@ -1,0 +1,1 @@
+screen python -m src.train
