@@ -1,6 +1,6 @@
 """parseval training
 
-Annotations:
+constrains:
     1. residual layer: f(x) + x -> 0.5x + 0.5f(x)
     2. fully connect layer: ||W * W^T - I||^2
     3. convolution layer: ||W * W^T - I / scaling||^2
@@ -8,7 +8,6 @@ Annotations:
 
 from typing import Tuple, Union
 import math
-import functools
 
 import torch
 import torch.nn as nn
@@ -170,7 +169,7 @@ class ParsevalRetrainTrainer(RetrainTrainer):
         return constrain_term
 
     def _convolutional_constrain(self, layer: nn.Conv2d) -> torch.Tensor:
-        def calculate_scaling(kernel_size: Tuple[int, ...], stride: Tuple[int, ...]):
+        def calculate_scaling(kernel_size: Tuple[int, ...], stride: Tuple[int, ...]) -> int:
             scaling = 1
             for a, b in zip(kernel_size, stride):
                 scaling *= math.ceil(a / b)
