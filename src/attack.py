@@ -127,7 +127,7 @@ if __name__ == '__main__':
     
     result = {}
     model = parseval_wrn34_10(k=6, num_classes=10)
-    for i in [1, 0.1, 0.05]:
+    for i in [1, 0.1, 0.05, 0.01]:
         model_path = f"./trained_models/parseval_retrain_cifar10_robust_plus_regularization_k6_{i}-best"
         logger.debug(f"load from `{model_path}`")
         model.load_state_dict(torch.load(model_path, map_location=settings.device))
@@ -141,5 +141,5 @@ if __name__ == '__main__':
         result[i] = acc
 
     logger.info(f"robustness result: {result}")
-    with open("./trained_models/parseval_cifar10_retrain_robust.json", "w") as f:
+    with open("./trained_models/parseval_cifar10_retrain_robust2.json", "w") as f:
         f.write(json.dumps(result))

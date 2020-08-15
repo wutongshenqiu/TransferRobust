@@ -53,14 +53,14 @@ if __name__ == '__main__':
     # )
 
     # retrain
-    # model.load_state_dict(torch.load("./trained_models/cifar10_robust_plus_regularization_k6_1-best", map_location=settings.device))
-    # trainer = RetrainTrainer(
-    #     k=6,
-    #     model=model,
-    #     train_loader=get_cifar_train_dataloader("cifar10"),
-    #     test_loader=get_cifar_test_dataloader("cifar10"),
-    #     checkpoint_path="./checkpoint/retrain_cifar10_robust_plus_regularization_k6_1.pth"
-    # )
+    model.load_state_dict(torch.load("./trained_models/cifar10_robust_plus_regularization_k6_1-best", map_location=settings.device))
+    trainer = RetrainTrainer(
+        k=6,
+        model=model,
+        train_loader=get_cifar_train_dataloader("cifar10"),
+        test_loader=get_cifar_test_dataloader("cifar10"),
+        checkpoint_path="./checkpoint/retrain_cifar10_robust_plus_regularization_k6_1.pth"
+    )
 
     # retrain blocks
     # k = 6
@@ -83,21 +83,21 @@ if __name__ == '__main__':
 
 
     # robust plus regularization
-    k = 6
-    _lambda = 1
-    model = wrn34_10(num_classes=100)
-    trainer = RobustPlusRegularizationTrainer(
-        k=k,
-        _lambda=_lambda,
-        model=model,
-        train_loader=get_cifar_train_dataloader("cifar100"),
-        test_loader=get_cifar_test_dataloader("cifar100"),
-        attacker=LinfPGDAttack,
-        params=attack_params.get("LinfPGDAttack"),
-        checkpoint_path=f"./checkpoint/cifar100_robust_plus_regularization_k{k}_{_lambda}",
-        # use sub directory to support multi SummaryWriter
-        # log_dir=f"./runs/lambda_{_lambda}",
-    )
+    # k = 6
+    # _lambda = 1
+    # model = wrn34_10(num_classes=100)
+    # trainer = RobustPlusRegularizationTrainer(
+    #     k=k,
+    #     _lambda=_lambda,
+    #     model=model,
+    #     train_loader=get_cifar_train_dataloader("cifar100"),
+    #     test_loader=get_cifar_test_dataloader("cifar100"),
+    #     attacker=LinfPGDAttack,
+    #     params=attack_params.get("LinfPGDAttack"),
+    #     checkpoint_path=f"./checkpoint/cifar100_robust_plus_regularization_k{k}_{_lambda}",
+    #     # use sub directory to support multi SummaryWriter
+    #     # log_dir=f"./runs/lambda_{_lambda}",
+    # )
 
     # trainer.train(f"./trained_models/parseval_retrain_cifar10_robust_plus_regularization_k{k}_{_lambda}")
     trainer.train(f"./trained_models/cifar100_robust_plus_regularization_k{k}_{_lambda}")
