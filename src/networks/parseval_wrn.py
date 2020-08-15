@@ -2,10 +2,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from .wrn import BasicBlock
 
-class BasicBlock(nn.Module):
+
+class ParsevalBasicBlock(nn.Module):
     def __init__(self, in_planes, out_planes, stride, dropRate=0.0):
-        super(BasicBlock, self).__init__()
+        super(ParsevalBasicBlock, self).__init__()
         self.bn1 = nn.BatchNorm2d(in_planes)
         self.relu1 = nn.LeakyReLU(negative_slope=0.1)
         self.conv1 = nn.Conv2d(in_planes, out_planes, kernel_size=3, stride=stride,
@@ -18,6 +20,7 @@ class BasicBlock(nn.Module):
         self.equalInOut = (in_planes == out_planes)
         self.convShortcut = (not self.equalInOut) and nn.Conv2d(in_planes, out_planes, kernel_size=1, stride=stride,
                                padding=0, bias=False) or None
+
     def forward(self, x):
         if not self.equalInOut:
             x = self.relu1(self.bn1(x))
@@ -27,23 +30,59 @@ class BasicBlock(nn.Module):
         if self.droprate > 0:
             out = F.dropout(out, p=self.droprate, training=self.training)
         out = self.conv2(out)
-        return torch.add(x if self.equalInOut else self.convShortcut(x), out)
 
-class NetworkBlock(nn.Module):
-    def __init__(self, nb_layers, in_planes, out_planes, block, stride, dropRate=0.0):
-        super(NetworkBlock, self).__init__()
-        self.layer = self._make_layer(block, in_planes, out_planes, nb_layers, stride, dropRate)
-    def _make_layer(self, block, in_planes, out_planes, nb_layers, stride, dropRate):
+        # todo
+        # convex combination
+        former_out = (x if self.equalInOut else self.convShortcut(x)) * 0.5
+        out = out * 0.5
+
+        return torch.add(former_out, out)
+        # return torch.add(x if self.equalInOut else self.convShortcut(x), out)
+
+    def __iter__(self):
+        return iter(
+            [self.bn1, self.relu1, self.conv1, self.bn2, self.relu2, self.conv2]
+        )
+
+
+class ParsevalNetworkBlock(nn.Module):
+    # record current residual block
+    current_block: int = 0
+
+    def __init__(self, k: int, nb_layers, in_planes, out_planes, stride, dropRate=0.0):
+        """
+        Args:
+            k: the last k blocks which will be retrained
+        """
+        super(ParsevalNetworkBlock, self).__init__()
+        self.layer = self._make_layer(k, in_planes, out_planes, nb_layers, stride, dropRate)
+
+    @classmethod
+    def _make_layer(cls, k: int, in_planes, out_planes, nb_layers, stride, dropRate):
         layers = []
         for i in range(int(nb_layers)):
+            cls.current_block += 1
+            # use ParsevalBasicBlock for residual block that needs retraining
+            # 17 is the total block of wrn34
+            if cls.current_block + k > 17:
+                block = ParsevalBasicBlock
+            else:
+                block = BasicBlock
             layers.append(block(i == 0 and in_planes or out_planes, out_planes, i == 0 and stride or 1, dropRate))
         return nn.Sequential(*layers)
+
     def forward(self, x):
         return self.layer(x)
 
-class WideResNet(nn.Module):
-    def __init__(self, depth, num_classes, widen_factor=1, dropRate=0.0):
-        super(WideResNet, self).__init__()
+
+class ParsevalWideResNet(nn.Module):
+    def __init__(self, k: int, depth, num_classes, widen_factor=1, dropRate=0.0):
+        """wide resnet for parseval training
+
+        Args:
+            k: the last k blocks which will be retrained
+        """
+        super(ParsevalWideResNet, self).__init__()
         nChannels = [16, 16*widen_factor, 32*widen_factor, 64*widen_factor]
         assert((depth - 4) % 6 == 0)
         n = (depth - 4) / 6
@@ -52,11 +91,11 @@ class WideResNet(nn.Module):
         self.conv1 = nn.Conv2d(3, nChannels[0], kernel_size=3, stride=1,
                                padding=1, bias=False)
         # 1st block
-        self.block1 = NetworkBlock(n, nChannels[0], nChannels[1], block, 1, dropRate)
+        self.block1 = ParsevalNetworkBlock(k, n, nChannels[0], nChannels[1], 1, dropRate)
         # 2nd block
-        self.block2 = NetworkBlock(n, nChannels[1], nChannels[2], block, 2, dropRate)
+        self.block2 = ParsevalNetworkBlock(k, n, nChannels[1], nChannels[2], 2, dropRate)
         # 3rd block
-        self.block3 = NetworkBlock(n, nChannels[2], nChannels[3], block, 2, dropRate)
+        self.block3 = ParsevalNetworkBlock(k, n, nChannels[2], nChannels[3], 2, dropRate)
         # global average pooling and classifier
         self.bn1 = nn.BatchNorm2d(nChannels[3])
         self.relu = nn.LeakyReLU(negative_slope=0.1)
@@ -83,5 +122,13 @@ class WideResNet(nn.Module):
         return self.fc(out)
 
 
-def wrn34_10(num_classes=10):
-    return WideResNet(34, num_classes, 10, 0)
+def parseval_retrain_wrn34_10(k: int, num_classes=10):
+    """
+    Args:
+        k: the last k blocks which will be retrained
+    """
+    return ParsevalWideResNet(k, 34, num_classes, 10, 0)
+
+
+def parseval_normal_wrn34_10(num_classes=10):
+    return ParsevalWideResNet(17, 34, num_classes, 10, 0)

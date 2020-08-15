@@ -111,7 +111,7 @@ def test_attack(model: nn.Module, test_loader, attacker, params: Dict, device: s
 
 
 if __name__ == '__main__':
-    from .trainer import parseval_wrn34_10
+    from .trainer import parseval_retrain_wrn34_10
     from .utils import get_cifar_test_dataloader, get_cifar_train_dataloader
     import time
     import json
@@ -126,7 +126,7 @@ if __name__ == '__main__':
     test_loader = get_cifar_test_dataloader("cifar10")
     
     result = {}
-    model = parseval_wrn34_10(k=6, num_classes=10)
+    model = parseval_retrain_wrn34_10(k=6, num_classes=10)
     for i in [1, 0.1, 0.05, 0.01]:
         model_path = f"./trained_models/parseval_retrain_cifar10_robust_plus_regularization_k6_{i}-best"
         logger.debug(f"load from `{model_path}`")

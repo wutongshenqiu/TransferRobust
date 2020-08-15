@@ -147,8 +147,4 @@ cython_debug/
 trained_models/
 logs/
 checkpoint/
-<<<<<<< HEAD
 runs/
-=======
-runs/
->>>>>>> 6ede297f13276e9527f1f27ecc5372a4438247cf
