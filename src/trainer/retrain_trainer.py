@@ -43,7 +43,7 @@ class RetrainTrainer(NormalTrainer):
         for p in self.model.parameters():
             p.requires_grad = False
 
-        for i in range(17, 17-k, 0):
+        for i in range(17, 17-k, -1):
             block = getattr(self._blocks, f"block{i}")
             for layer in block:
                 if hasattr(layer, "reset_parameters"):

@@ -4,7 +4,7 @@ from .networks import wrn34_10
 
 from .trainer import (ADVTrainer, RetrainTrainer,
                       CIFARTLTrainer, RobustPlusRegularizationTrainer,
-                      ParsevalRetrainTrainer, parseval_wrn34_10)
+                      ParsevalRetrainTrainer)
 
 from . import settings
 from .utils import get_cifar_test_dataloader, get_cifar_train_dataloader, logger
@@ -83,21 +83,21 @@ if __name__ == '__main__':
 
 
     # robust plus regularization
-    k = 6
-    _lambda = 1
-    model = wrn34_10(num_classes=100)
-    trainer = RobustPlusRegularizationTrainer(
-        k=k,
-        _lambda=_lambda,
-        model=model,
-        train_loader=get_cifar_train_dataloader("cifar100"),
-        test_loader=get_cifar_test_dataloader("cifar100"),
-        attacker=LinfPGDAttack,
-        params=attack_params.get("LinfPGDAttack"),
-        checkpoint_path=f"./checkpoint/cifar100_robust_plus_regularization_k{k}_{_lambda}",
-        # use sub directory to support multi SummaryWriter
-        # log_dir=f"./runs/lambda_{_lambda}",
-    )
+    # k = 6
+    # _lambda = 1
+    # model = wrn34_10(num_classes=100)
+    # trainer = RobustPlusRegularizationTrainer(
+    #     k=k,
+    #     _lambda=_lambda,
+    #     model=model,
+    #     train_loader=get_cifar_train_dataloader("cifar100"),
+    #     test_loader=get_cifar_test_dataloader("cifar100"),
+    #     attacker=LinfPGDAttack,
+    #     params=attack_params.get("LinfPGDAttack"),
+    #     checkpoint_path=f"./checkpoint/cifar100_robust_plus_regularization_k{k}_{_lambda}",
+    #     # use sub directory to support multi SummaryWriter
+    #     # log_dir=f"./runs/lambda_{_lambda}",
+    # )
 
     # trainer.train(f"./trained_models/parseval_retrain_cifar10_robust_plus_regularization_k{k}_{_lambda}")
     trainer.train(f"./trained_models/cifar100_robust_plus_regularization_k{k}_{_lambda}")
