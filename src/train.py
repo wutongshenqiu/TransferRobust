@@ -15,8 +15,9 @@ torch.backends.cudnn.benchmark = True
 
 if __name__ == '__main__':
     import time
+    # time.sleep(18000)
     logger.info(settings)
-    model = parseval_wrn34_10(num_classes=10)
+
     # tranform learning
     # model = wrn34_10(num_classes=10)
     # trainer = CIFARTLTrainer(
@@ -61,33 +62,42 @@ if __name__ == '__main__':
     #     checkpoint_path="./checkpoint/retrain_cifar10_robust_plus_regularization_k6_1.pth"
     # )
 
-    teacher_model_path = "./trained_models/cifar10_robust_plus_regularization_k6_1-best"
-    model.load_state_dict(torch.load(teacher_model_path, map_location=settings.device))
-    logger.debug(f"teacher model: {teacher_model_path}")
-    # parseval retrain
-    trainer = ParsevalRetrainTrainer(
-        beta=0.0003,
-        k=6,
-        model=model,
-        train_loader=get_cifar_train_dataloader(),
-        test_loader=get_cifar_test_dataloader(),
-        checkpoint_path="./checkpoint/parseval_retrain_cifar10_robust_plus_regularization_k6_1.pth"
-    )
-
-    # robust plus regularization
-    # _k = 6
-    # _lambda = 1
-    # trainer = RobustPlusRegularizationTrainer(
-    #     k=_k,
-    #     _lambda=_lambda,
+    # retrain blocks
+    # k = 6
+    # _lambda = 0.01
+    # model = parseval_wrn34_10(k=k, num_classes=10)
+    # teacher_model_path = f"./trained_models/cifar10_robust_plus_regularization_k{k}_{_lambda}-best"
+    # model.load_state_dict(torch.load(teacher_model_path, map_location=settings.device))
+    # logger.debug(f"teacher model: {teacher_model_path}")
+    # # parseval retrain
+    # trainer = ParsevalRetrainTrainer(
+    #     beta=0.0003,
+    #     k=k,
     #     model=model,
-    #     train_loader=get_cifar_train_dataloader("cifar10"),
-    #     test_loader=get_cifar_test_dataloader("cifar10"),
-    #     attacker=LinfPGDAttack,
-    #     params=attack_params.get("LinfPGDAttack"),
-    #     checkpoint_path=f"./checkpoint/cifar10_robust_plus_regularization_k{_k}_{_lambda}",
-    #     # use sub directory to support multi SummaryWriter
-    #     log_dir=f"./runs/lambda_{_lambda}",
+    #     train_loader=get_cifar_train_dataloader(),
+    #     test_loader=get_cifar_test_dataloader(),
+    #     checkpoint_path=f"./checkpoint/parseval_retrain_cifar10_robust_plus_regularization_k{k}_{_lambda}.pth"
     # )
 
-    trainer.train("./trained_models/parseval_retrain_cifar10_robust_plus_regularization_k6_1")
+    # train with parseval network
+
+
+    # robust plus regularization
+    k = 6
+    _lambda = 1
+    model = wrn34_10(num_classes=100)
+    trainer = RobustPlusRegularizationTrainer(
+        k=k,
+        _lambda=_lambda,
+        model=model,
+        train_loader=get_cifar_train_dataloader("cifar100"),
+        test_loader=get_cifar_test_dataloader("cifar100"),
+        attacker=LinfPGDAttack,
+        params=attack_params.get("LinfPGDAttack"),
+        checkpoint_path=f"./checkpoint/cifar100_robust_plus_regularization_k{k}_{_lambda}",
+        # use sub directory to support multi SummaryWriter
+        # log_dir=f"./runs/lambda_{_lambda}",
+    )
+
+    # trainer.train(f"./trained_models/parseval_retrain_cifar10_robust_plus_regularization_k{k}_{_lambda}")
+    trainer.train(f"./trained_models/cifar100_robust_plus_regularization_k{k}_{_lambda}")

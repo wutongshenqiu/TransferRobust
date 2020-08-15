@@ -13,7 +13,9 @@ from src.utils import logger
 class RobustPlusRegularizationTrainer(ADVTrainer):
     def __init__(self, k: int, _lambda: float, model: Module, train_loader: DataLoader,
                  test_loader: DataLoader, attacker, params: Dict,
-                 checkpoint_path: str = None, log_dir: str = None):
+                 checkpoint_path: str = None, 
+                #  log_dir: str = None
+                 ):
         super(RobustPlusRegularizationTrainer, self).__init__(model, train_loader, test_loader,
                                                               attacker, params, checkpoint_path)
         self._blocks = WRN34Block(model)
@@ -22,9 +24,9 @@ class RobustPlusRegularizationTrainer(ADVTrainer):
         self._lambda = _lambda
 
         # tensorboard
-        self.writer = SummaryWriter(log_dir=log_dir)
-        if not hasattr(self, "_current_batch"):
-            self._current_batch = 0
+        # self.writer = SummaryWriter(log_dir=log_dir)
+        # if not hasattr(self, "_current_batch"):
+            # self._current_batch = 0
 
     def step_batch(self, inputs: torch.Tensor, labels: torch.Tensor):
         inputs, labels = inputs.to(self._device), labels.to(self._device)
@@ -40,33 +42,33 @@ class RobustPlusRegularizationTrainer(ADVTrainer):
             (r_adv - r_clean).view(r_adv.shape[0], -1),
             dim=1
         ).sum()
-        logger.debug(f"batch: {self._current_batch}")
-        logger.debug(f"d_loss: {regularization_term}")
+        # logger.debug(f"batch: {self._current_batch}")
+        # logger.debug(f"d_loss: {regularization_term}")
 
         self._hooked_features_list.clear()
 
         l_term = self.criterion(adv_outputs, labels)
-        logger.debug(f"l_loss: {l_term}")
+        # logger.debug(f"l_loss: {l_term}")
 
         # tensorboard draw
-        self.writer.add_scalars(
-            f"lambda_{self._lambda}",
-            {
-                "l_loss": l_term,
-                "d_loss": regularization_term
-            }
-        )
-        self.writer.add_scalar(
-            f"lambda_{self._lambda}_l_loss",
-            l_term,
-            self._current_batch
-        )
-        self.writer.add_scalar(
-            f"lambda_{self._lambda}_d_loss",
-            regularization_term,
-            self._current_batch
-        )
-        self._current_batch += 1
+        # self.writer.add_scalars(
+        #     f"lambda_{self._lambda}",
+        #     {
+        #         "l_loss": l_term,
+        #         "d_loss": regularization_term
+        #     }
+        # )
+        # self.writer.add_scalar(
+        #     f"lambda_{self._lambda}_l_loss",
+        #     l_term,
+        #     self._current_batch
+        # )
+        # self.writer.add_scalar(
+        #     f"lambda_{self._lambda}_d_loss",
+        #     regularization_term,
+        #     self._current_batch
+        # )
+        # self._current_batch += 1
         loss = l_term + regularization_term
 
         self.optimizer.zero_grad()
@@ -79,7 +81,7 @@ class RobustPlusRegularizationTrainer(ADVTrainer):
         return batch_running_loss, batch_training_acc
 
     def _register_forward_hook_to_k_block(self, k):
-        assert 1 <= k <= 17
+        # assert 1 <= k <= 17
         block = getattr(self._blocks, f"block{18 - k}")
         block[-1].register_forward_hook(self.get_layer_outputs)
 
@@ -87,27 +89,27 @@ class RobustPlusRegularizationTrainer(ADVTrainer):
         if self.model.training:
             self._hooked_features_list.append(outputs.clone().detach())
 
-    def _save_checkpoint(self, current_epoch, best_acc):
-        model_weights = self.model.state_dict()
-        optimizer = self.optimizer.state_dict()
-        current_batch = self._current_batch
+    # def _save_checkpoint(self, current_epoch, best_acc):
+    #     model_weights = self.model.state_dict()
+    #     optimizer = self.optimizer.state_dict()
+    #     current_batch = self._current_batch
 
-        torch.save({
-            "model_weights": model_weights,
-            "optimizer": optimizer,
-            "current_epoch": current_epoch,
-            "best_acc": best_acc,
-            "current_batch": current_batch
-        }, f"{self._checkpoint_path}")
+    #     torch.save({
+    #         "model_weights": model_weights,
+    #         "optimizer": optimizer,
+    #         "current_epoch": current_epoch,
+    #         "best_acc": best_acc,
+    #         "current_batch": current_batch
+    #     }, f"{self._checkpoint_path}")
 
-    def _load_from_checkpoint(self, checkpoint_path: str) -> None:
-        checkpoint = torch.load(checkpoint_path)
-        self.model.load_state_dict(checkpoint.get("model_weights"))
-        self.optimizer.load_state_dict(checkpoint.get("optimizer"))
-        start_epoch = checkpoint.get("current_epoch") + 1
-        best_acc = checkpoint.get("best_acc")
+    # def _load_from_checkpoint(self, checkpoint_path: str) -> None:
+    #     checkpoint = torch.load(checkpoint_path)
+    #     self.model.load_state_dict(checkpoint.get("model_weights"))
+    #     self.optimizer.load_state_dict(checkpoint.get("optimizer"))
+    #     start_epoch = checkpoint.get("current_epoch") + 1
+    #     best_acc = checkpoint.get("best_acc")
 
-        self.start_epoch = start_epoch
-        self.best_acc = best_acc
+    #     self.start_epoch = start_epoch
+    #     self.best_acc = best_acc
 
-        self._current_batch = checkpoint.get("current_batch")
+    #     self._current_batch = checkpoint.get("current_batch")

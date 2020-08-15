@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 import json
 
 from src import settings
+from .logging_utils import logger
 
 
 DATA_DIR = "~/dataset"
@@ -43,7 +44,7 @@ def get_mean_and_std(dataset: str = settings.dataset_name) -> Tuple[Tuple, Tuple
         std = CIFAR10_TRAIN_STD
     else:
         raise ValueError(f'dataset "{dataset}" is not supported!')
-
+    
     return mean, std
 
 
@@ -52,12 +53,15 @@ def get_cifar_train_dataloader(dataset=settings.dataset_name, batch_size=setting
 
     if dataset == "cifar100":
         _data = torchvision.datasets.CIFAR100
+        logger.info("load cifar100 train dataset")
     elif dataset == "cifar10":
         _data = torchvision.datasets.CIFAR10
+        logger.info("load cifar10 train dataset")
     else:
         raise ValueError(f'dataset "{dataset}" is not supported!')
 
     mean, std = get_mean_and_std(dataset=dataset)
+    logger.debug(f"dataset mean: {mean}, dataset std: {std}")
 
     compose_list = [
         transforms.RandomCrop(32, padding=4),
@@ -82,8 +86,10 @@ def get_cifar_test_dataloader(dataset=settings.dataset_name, batch_size=settings
 
     if dataset == "cifar100":
         _data = torchvision.datasets.CIFAR100
+        logger.info("load cifar100 test dataset")
     elif dataset == "cifar10":
         _data = torchvision.datasets.CIFAR10
+        logger.info("load cifar10 test dataset")
     else:
         raise ValueError(f'dataset "{dataset}" is not supported!')
 
