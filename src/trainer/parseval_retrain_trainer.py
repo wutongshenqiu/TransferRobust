@@ -251,7 +251,7 @@ class ParsevalRetrainTrainer(RetrainTrainer):
             "fc": []
         }
         logger.debug(f"model structure: \n{self.model}")
-        for i in range(17, 17-k, -1):
+        for i in range(17, 17-k, 0):
             block = getattr(self._blocks, f"block{i}")
             for layer in block:
                 layer: Union[Module, ParsevalBasicBlock]
