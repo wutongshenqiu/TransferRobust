@@ -57,7 +57,7 @@ class Settings(BaseSettings):
     logger_name: str = "StreamHandler"
     # log_file: Union[str, PurePath] = log_dir / "parseval_retrain_k6_0.01.log"
     # log_file: Union[str, PurePath] = log_dir / "cifar100_robust_plus_regularization_k6_1.log"
-    log_file: Union[str, PurePath] = log_dir / "attack.log"
+    log_file: Union[str, PurePath] = log_dir / "cifar100_pgd7.log"
 
     @validator("logger_name")
     def check_logger_name(cls, v):

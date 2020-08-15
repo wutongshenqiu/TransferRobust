@@ -41,16 +41,18 @@ if __name__ == '__main__':
     # )
 
     #
-    # trainer = ADVTrainer(
-    #     # todo
-    #     # !!! 这里不能使用 normalize，因为 attack 的实现里面没有考虑 normalize
-    #     # 那ART训练又是为什么呢？
-    #     model, get_cifar_train_dataloader(),
-    #     get_cifar_test_dataloader(),
-    #     attacker=LinfPGDAttack,
-    #     params=attack_params.get("LinfPGDAttack"),
-    #     checkpoint_path="./checkpoint/checkpoint_wrn34.pth"
-    # )
+    from .networks import wrn34_10
+    trainer = ADVTrainer(
+        # todo
+        # !!! 这里不能使用 normalize，因为 attack 的实现里面没有考虑 normalize
+        # 那ART训练又是为什么呢？
+        model=wrn34_10(num_classes=100),
+        train_loader=get_cifar_train_dataloader("cifar100"),
+        test_loader=get_cifar_test_dataloader("cifar100"),
+        attacker=LinfPGDAttack,
+        params=attack_params.get("LinfPGDAttack"),
+        checkpoint_path="./checkpoint/cifar100_pgd7_train.pth"
+    )
 
     # retrain
     # model.load_state_dict(torch.load("./trained_models/cifar10_robust_plus_regularization_k6_1-best", map_location=settings.device))
@@ -100,15 +102,15 @@ if __name__ == '__main__':
     # )
 
     # parseval normal train
-    from src.networks import parseval_normal_wrn34_10
-    trainer = ParsevalNormalTrainer(
-        beta=0.0003,
-        model=parseval_normal_wrn34_10(num_classes=10),
-        train_loader=get_cifar_train_dataloader("cifar10"),
-        test_loader=get_cifar_test_dataloader("cifar10"),
-        checkpoint_path="./checkpoint/cifar10_parseval_normal_train.pth"
-    )
+    # from src.networks import parseval_normal_wrn34_10
+    # trainer = ParsevalNormalTrainer(
+    #     beta=0.0003,
+    #     model=parseval_normal_wrn34_10(num_classes=10),
+    #     train_loader=get_cifar_train_dataloader("cifar10"),
+    #     test_loader=get_cifar_test_dataloader("cifar10"),
+    #     checkpoint_path="./checkpoint/cifar10_parseval_normal_train.pth"
+    # )
 
     # trainer.train(f"./trained_models/parseval_retrain_cifar10_robust_plus_regularization_k{k}_{_lambda}")
     # trainer.train(f"./trained_models/cifar100_robust_plus_regularization_k{k}_{_lambda}")
-    trainer.train(f"./trained_models/cifar10_parseval_normal_train")
+    trainer.train(f"./trained_models/cifar100_pgd7_train")
