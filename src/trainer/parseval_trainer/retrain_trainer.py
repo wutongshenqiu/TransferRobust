@@ -15,12 +15,13 @@ from torch.utils.data import DataLoader
 from ..retrain_trainer import RetrainTrainer
 
 from src.utils import logger
-from .mixins import ParsevalTrainerMixin
-from src.networks import parseval_retrain_wrn34_10
+from .mixins import ParsevalConstrainMixin
+from src.networks import parseval_retrain_wrn34_10, SupportedModuleType
 
 
-class ParsevalRetrainTrainer(RetrainTrainer, ParsevalTrainerMixin):
-    def __init__(self, beta: float, k: int, model: Module, train_loader: DataLoader,
+class ParsevalRetrainTrainer(RetrainTrainer, ParsevalConstrainMixin):
+
+    def __init__(self, beta: float, k: int, model: SupportedModuleType, train_loader: DataLoader,
                  test_loader: DataLoader, checkpoint_path: str = None):
         """initialize retrain trainer
 
@@ -29,7 +30,7 @@ class ParsevalRetrainTrainer(RetrainTrainer, ParsevalTrainerMixin):
             k: the last k blocks which will be retrained
         """
         super(ParsevalRetrainTrainer, self).__init__(k, model, train_loader, test_loader, checkpoint_path)
-        self._gather_constrain_layers(k)
+        self.gather_constrain_layers(k)
         self._beta = beta
 
     def step_batch(self, inputs: torch.Tensor, labels: torch.Tensor) -> Tuple[float, float]:

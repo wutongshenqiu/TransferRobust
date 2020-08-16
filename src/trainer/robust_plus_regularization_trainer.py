@@ -5,15 +5,16 @@ from torch.nn.modules.module import Module
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 
-from . import ADVTrainer, WRN34Block
+from .adv_trainer import ADVTrainer
+from .retrain_trainer import WRN34Block
 from src.utils import logger
+from src.networks import SupportedModuleType
 
 
 
 class RobustPlusRegularizationTrainer(ADVTrainer):
-    def __init__(self, k: int, _lambda: float, model: Module, train_loader: DataLoader,
-                 test_loader: DataLoader, attacker, params: Dict,
-                 checkpoint_path: str = None, 
+    def __init__(self, k: int, _lambda: float, model: SupportedModuleType, train_loader: DataLoader,
+                 test_loader: DataLoader, attacker, params: Dict, checkpoint_path: str = None,
                 #  log_dir: str = None
                  ):
         super(RobustPlusRegularizationTrainer, self).__init__(model, train_loader, test_loader,
@@ -82,6 +83,7 @@ class RobustPlusRegularizationTrainer(ADVTrainer):
 
     def _register_forward_hook_to_k_block(self, k):
         # assert 1 <= k <= 17
+        logger.debug(f"register hook to the last layer of {k}th block from last")
         block = getattr(self._blocks, f"block{18 - k}")
         block[-1].register_forward_hook(self.get_layer_outputs)
 

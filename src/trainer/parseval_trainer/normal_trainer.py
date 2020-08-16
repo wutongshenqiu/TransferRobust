@@ -7,12 +7,13 @@ from torch.utils.data import DataLoader
 from ..base_trainer import BaseTrainer
 from ..retrain_trainer import WRN34Block
 from src.utils import logger
-from .mixins import ParsevalTrainerMixin
-from src.networks import parseval_normal_wrn34_10
+from .mixins import ParsevalConstrainMixin
+from src.networks import parseval_normal_wrn34_10, SupportedModuleType
 
 
-class ParsevalNormalTrainer(BaseTrainer, ParsevalTrainerMixin):
-    def __init__(self, beta: float, model: Module, train_loader: DataLoader,
+class ParsevalNormalTrainer(BaseTrainer, ParsevalConstrainMixin):
+
+    def __init__(self, beta: float, model: SupportedModuleType, train_loader: DataLoader,
                  test_loader: DataLoader, checkpoint_path: str = None):
         """initialize retrain trainer
 
@@ -21,7 +22,7 @@ class ParsevalNormalTrainer(BaseTrainer, ParsevalTrainerMixin):
         """
         super(ParsevalNormalTrainer, self).__init__(model, train_loader, test_loader, checkpoint_path)
         self._blocks = WRN34Block(model)
-        self._gather_constrain_layers(17)
+        self.gather_constrain_layers(17)
         self._beta = beta
 
     def step_batch(self, inputs: torch.Tensor, labels: torch.Tensor) -> Tuple[float, float]:

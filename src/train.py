@@ -2,8 +2,8 @@ import torch
 
 from .networks import wrn34_10, parseval_retrain_wrn34_10
 
-from .trainer import (ADVTrainer, RetrainTrainer,
-                      CIFARTLTrainer, RobustPlusRegularizationTrainer,
+from .trainer import (ADVTrainer, RetrainTrainer, TransformLearningTrainer,
+                      ParsevalTransformLearningTrainer, RobustPlusRegularizationTrainer,
                       ParsevalRetrainTrainer, ParsevalNormalTrainer)
 
 from . import settings
@@ -20,13 +20,26 @@ if __name__ == '__main__':
 
     # tranform learning
     # model = wrn34_10(num_classes=10)
-    # trainer = CIFARTLTrainer(
-    #     teacher_model_path="../trained_models/cifar100_wrn34_10-best",
+    # trainer = TransformLearningTrainer(
+    #     k=6,
+    #     teacher_model_path="./trained_models/cifar100_pgd7_train-best",
     #     model=model,
     #     train_loader=get_cifar_train_dataloader("cifar10"),
     #     test_loader=get_cifar_test_dataloader("cifar10"),
-    #     checkpoint_path="../checkpoint/checkpoint.pth"
+    #     checkpoint_path="./checkpoint/tl_robust_plus_regularization_blocks6_lambda_1.pth"
     # )
+
+    # parseval tranform learning
+    model = parseval_retrain_wrn34_10(k=6, num_classes=10)
+    trainer = ParsevalTransformLearningTrainer(
+        beta=0.0003,
+        k=6,
+        teacher_model_path="./trained_models/cifar100_pgd7_train-best",
+        model=model,
+        train_loader=get_cifar_train_dataloader("cifar10"),
+        test_loader=get_cifar_test_dataloader("cifar10"),
+        checkpoint_path="./checkpoint/parseval_tl_robust_plus_regularization_blocks6_lambda_1.pth"
+    )
 
     #
     # trainer = ADVTrainer(
@@ -40,7 +53,7 @@ if __name__ == '__main__':
     #     checkpoint_path="./checkpoint/cifar100_pgd7_train.pth"
     # )
 
-    # retrain
+    # normal retrain
     # model.load_state_dict(torch.load("./trained_models/cifar10_robust_plus_regularization_k6_1-best", map_location=settings.device))
     # trainer = RetrainTrainer(
     #     k=6,
@@ -53,8 +66,8 @@ if __name__ == '__main__':
     # retrain blocks
     # k = 6
     # _lambda = 0.01
-    # model = parseval_retrain_wrn34_10(k=k, num_classes=10)
-    # teacher_model_path = f"./trained_models/cifar10_robust_plus_regularization_k{k}_{_lambda}-best"
+    # model = parseval_retrain_wrn34_10(k=k, num_classes=100)
+    # teacher_model_path = f"./trained_models/cifar100_pgd7_train-best"
     # model.load_state_dict(torch.load(teacher_model_path, map_location=settings.device))
     # logger.debug(f"teacher model: {teacher_model_path}")
     # # parseval retrain
@@ -71,21 +84,21 @@ if __name__ == '__main__':
 
 
     # robust plus regularization
-    k = 6
-    _lambda = 1
-    model = wrn34_10(num_classes=100)
-    trainer = RobustPlusRegularizationTrainer(
-        k=k,
-        _lambda=_lambda,
-        model=model,
-        train_loader=get_cifar_train_dataloader("cifar100"),
-        test_loader=get_cifar_test_dataloader("cifar100"),
-        attacker=LinfPGDAttack,
-        params=attack_params.get("LinfPGDAttack"),
-        checkpoint_path=f"./checkpoint/cifar100_robust_plus_regularization_blocks{k}_lambda{_lambda}",
-        # use sub directory to support multi SummaryWriter
-        # log_dir=f"./runs/lambda_{_lambda}",
-    )
+    # k = 6
+    # _lambda = 1
+    # model = wrn34_10(num_classes=100)
+    # trainer = RobustPlusRegularizationTrainer(
+    #     k=k,
+    #     _lambda=_lambda,
+    #     model=model,
+    #     train_loader=get_cifar_train_dataloader("cifar100"),
+    #     test_loader=get_cifar_test_dataloader("cifar100"),
+    #     attacker=LinfPGDAttack,
+    #     params=attack_params.get("LinfPGDAttack"),
+    #     checkpoint_path=f"./checkpoint/cifar100_robust_plus_regularization_blocks{k}_lambda{_lambda}",
+    #     # use sub directory to support multi SummaryWriter
+    #     # log_dir=f"./runs/lambda_{_lambda}",
+    # )
 
     # parseval normal train
     # from src.networks import parseval_normal_wrn34_10
@@ -98,5 +111,5 @@ if __name__ == '__main__':
     # )
 
     # trainer.train(f"./trained_models/parseval_retrain_cifar10_robust_plus_regularization_k{k}_{_lambda}")
-    trainer.train(f"./trained_models/cifar100_robust_plus_regularization_blocks{k}_lambda_{_lambda}")
+    # trainer.train(f"./trained_models/cifar100_robust_plus_regularization_blocks{k}_lambda_{_lambda}")
     # trainer.train(f"./trained_models/cifar100_pgd7_train")

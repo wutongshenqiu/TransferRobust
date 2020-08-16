@@ -1,14 +1,14 @@
 from typing import Tuple
 
 import torch
-from torch.nn.modules.module import Module
 from torch.utils.data import DataLoader
 
-from . import BaseTrainer
+from .base_trainer import BaseTrainer
+from src.networks import SupportedModuleType
 
 
 class NormalTrainer(BaseTrainer):
-    def __init__(self, model: Module, train_loader: DataLoader,
+    def __init__(self, model: SupportedModuleType, train_loader: DataLoader,
                  test_loader: DataLoader, checkpoint_path: str = None):
         super(NormalTrainer, self).__init__(model, train_loader, test_loader, checkpoint_path)
 
