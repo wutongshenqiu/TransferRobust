@@ -1,6 +1,6 @@
 import torch
 
-from .networks import wrn34_10
+from .networks import wrn34_10, parseval_retrain_wrn34_10
 
 from .trainer import (ADVTrainer, RetrainTrainer,
                       CIFARTLTrainer, RobustPlusRegularizationTrainer,
@@ -28,31 +28,17 @@ if __name__ == '__main__':
     #     checkpoint_path="../checkpoint/checkpoint.pth"
     # )
 
-    # fixme
-    # still have bugs
-    # trainer = ARTTrainer(
-    #     model, get_cifar_train_dataloader("cifar10", normalize=False),
-    #     get_cifar_test_dataloader("cifar10", normalize=False),
-    #     attacker="ProjectedGradientDescent",
-    #     params=attack_params.get("ProjectedGradientDescent"),
-    #     dataset_mean=CIFAR10_TRAIN_MEAN,
-    #     dataset_std=CIFAR10_TRAIN_STD,
-    #     checkpoint_path="./checkpoint/checkpoint.pth"
-    # )
-
     #
-    from .networks import wrn34_10
-    trainer = ADVTrainer(
-        # todo
-        # !!! 这里不能使用 normalize，因为 attack 的实现里面没有考虑 normalize
-        # 那ART训练又是为什么呢？
-        model=wrn34_10(num_classes=100),
-        train_loader=get_cifar_train_dataloader("cifar100"),
-        test_loader=get_cifar_test_dataloader("cifar100"),
-        attacker=LinfPGDAttack,
-        params=attack_params.get("LinfPGDAttack"),
-        checkpoint_path="./checkpoint/cifar100_pgd7_train.pth"
-    )
+    # trainer = ADVTrainer(
+    #     # !!! 这里不能使用 normalize，因为 attack 的实现里面没有考虑 normalize
+    #     # 那ART训练又是为什么呢？
+    #     model=wrn34_10(num_classes=100),
+    #     train_loader=get_cifar_train_dataloader("cifar100"),
+    #     test_loader=get_cifar_test_dataloader("cifar100"),
+    #     attacker=LinfPGDAttack,
+    #     params=attack_params.get("LinfPGDAttack"),
+    #     checkpoint_path="./checkpoint/cifar100_pgd7_train.pth"
+    # )
 
     # retrain
     # model.load_state_dict(torch.load("./trained_models/cifar10_robust_plus_regularization_k6_1-best", map_location=settings.device))
@@ -85,21 +71,21 @@ if __name__ == '__main__':
 
 
     # robust plus regularization
-    # k = 6
-    # _lambda = 1
-    # model = wrn34_10(num_classes=100)
-    # trainer = RobustPlusRegularizationTrainer(
-    #     k=k,
-    #     _lambda=_lambda,
-    #     model=model,
-    #     train_loader=get_cifar_train_dataloader("cifar100"),
-    #     test_loader=get_cifar_test_dataloader("cifar100"),
-    #     attacker=LinfPGDAttack,
-    #     params=attack_params.get("LinfPGDAttack"),
-    #     checkpoint_path=f"./checkpoint/cifar100_robust_plus_regularization_k{k}_{_lambda}",
-    #     # use sub directory to support multi SummaryWriter
-    #     # log_dir=f"./runs/lambda_{_lambda}",
-    # )
+    k = 6
+    _lambda = 1
+    model = wrn34_10(num_classes=100)
+    trainer = RobustPlusRegularizationTrainer(
+        k=k,
+        _lambda=_lambda,
+        model=model,
+        train_loader=get_cifar_train_dataloader("cifar100"),
+        test_loader=get_cifar_test_dataloader("cifar100"),
+        attacker=LinfPGDAttack,
+        params=attack_params.get("LinfPGDAttack"),
+        checkpoint_path=f"./checkpoint/cifar100_robust_plus_regularization_blocks{k}_lambda{_lambda}",
+        # use sub directory to support multi SummaryWriter
+        # log_dir=f"./runs/lambda_{_lambda}",
+    )
 
     # parseval normal train
     # from src.networks import parseval_normal_wrn34_10
@@ -112,5 +98,5 @@ if __name__ == '__main__':
     # )
 
     # trainer.train(f"./trained_models/parseval_retrain_cifar10_robust_plus_regularization_k{k}_{_lambda}")
-    # trainer.train(f"./trained_models/cifar100_robust_plus_regularization_k{k}_{_lambda}")
-    trainer.train(f"./trained_models/cifar100_pgd7_train")
+    trainer.train(f"./trained_models/cifar100_robust_plus_regularization_blocks{k}_lambda_{_lambda}")
+    # trainer.train(f"./trained_models/cifar100_pgd7_train")

@@ -183,7 +183,6 @@ def compute_mean_std(cifar100_dataset):
     return mean, std
 
 
-# TODO use for warming up learning rate?
 class WarmUpLR(_LRScheduler):
     """warmup_training learning rate scheduler
     Args:
