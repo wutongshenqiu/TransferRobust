@@ -5,15 +5,15 @@ from typing import Tuple
 
 import torch
 from torch import optim
-from torch.nn.modules.module import Module
 from torch.utils.data import DataLoader
 
 from src import settings
 from src.utils import WarmUpLR, evaluate_accuracy, logger
+from src.networks import SupportedModuleType
 
 
 class BaseTrainer:
-    def __init__(self, model: Module, train_loader: DataLoader,
+    def __init__(self, model: SupportedModuleType, train_loader: DataLoader,
                  test_loader: DataLoader, checkpoint_path: str = None):
         logger.info("initialize trainer")
         # can not change the order

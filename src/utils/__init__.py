@@ -8,5 +8,3 @@ from .data_utils import (
 )
 
 from .logging_utils import logger
-
-from .art_utils import init_attacker, init_classifier

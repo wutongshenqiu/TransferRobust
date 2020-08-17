@@ -6,15 +6,17 @@ import math
 
 from src.utils import logger
 from ..retrain_trainer import WRN34Block
-from src.networks import ParsevalBasicBlock
+from src.networks import ParsevalBasicBlock, SupportedModuleType
 
 
-class ParsevalTrainerMixin:
-    model: nn.Module
+class ParsevalConstrainMixin:
+    """provide `gather_constrain_layers` and `sum_layers_constrain` method"""
+    model: SupportedModuleType
     _device: Union[str, torch.device]
     _blocks: WRN34Block
 
     def sum_layers_constrain(self) -> torch.Tensor:
+        """sum constrain of layers that have been gathered in `gather_constrain_layers`"""
         return sum(
             map(self._fully_connect_constrain, self._layers_needed_constrain["fc"])
         ) + sum(
@@ -53,7 +55,7 @@ class ParsevalTrainerMixin:
 
         return constrain_term
 
-    def _gather_constrain_layers(self, k):
+    def gather_constrain_layers(self, k):
         """gather conv/fc layers in trainable layers to facilitate calculating regularization
 
         Args:
