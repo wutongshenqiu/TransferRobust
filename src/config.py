@@ -58,7 +58,7 @@ class Settings(BaseSettings):
     # log_file: Union[str, PurePath] = log_dir / "parseval_retrain_k6_0.01.log"
     # log_file: Union[str, PurePath] = log_dir / "cifar100_robust_plus_regularization_blocks8_lambda_1.log"
     # log_file: Union[str, PurePath] = log_dir / "cifar100_pgd7.log"
-    log_file: Union[str, PurePath] = log_dir / "tl_pgd7_blocks1-8.log"
+    log_file: Union[str, PurePath] = log_dir / "tl_pgd7_blocks16-18.log"
 
     @validator("logger_name")
     def check_logger_name(cls, v):

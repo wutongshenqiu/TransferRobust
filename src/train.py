@@ -15,12 +15,12 @@ torch.backends.cudnn.benchmark = True
 
 if __name__ == '__main__':
     import time
-    time.sleep(9000)
+    time.sleep(12000)
     logger.info(settings)
 
     # tranform learning
     model = wrn34_10(num_classes=10)
-    for k in range(1, 8):
+    for k in range(16, 18):
         trainer = TransformLearningTrainer(
             k=k,
             teacher_model_path="./trained_models/cifar100_pgd7_train-best",
