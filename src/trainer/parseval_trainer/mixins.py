@@ -77,8 +77,11 @@ class ParsevalConstrainMixin:
                 if isinstance(layer, nn.Linear):
                     self._layers_needed_constrain["fc"].append(layer)
 
-        # if k = 17, we should add the first convolutional layer
-        if k == 17:
-            self._layers_needed_constrain["conv"].append(self.model.conv1)
+        # ignore first conv layer due to ignorance of first conv layer in `ResetBlockMixin`
+        # if k == 17:
+        #     self._layers_needed_constrain["conv"].append(self.model.conv1)
 
         logger.debug(f"layers needed constrain: \n{self._layers_needed_constrain}")
+        logger.debug(f"including {len(self._layers_needed_constrain['conv'])} convolutional layers, "
+                     f"{len(self._layers_needed_constrain['fc'])} fully connect layers")
+

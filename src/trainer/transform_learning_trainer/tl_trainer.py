@@ -13,6 +13,15 @@ class TransformLearningTrainer(NormalTrainer, ResetBlockMixin, FreezeModelMixin,
     def __init__(self, k: int, teacher_model_path: str,
                  model: SupportedModuleType, train_loader: DataLoader,
                  test_loader: DataLoader, checkpoint_path: str = None):
+        """we obey following ideas in `transform learning trainer`
+
+        Ideas:
+            1. first reshape fully connect layer of teacher state_dict
+            2. load reshaped state_dict
+            3. set `requires_grad = False` for all parameters in model
+            4. set `requires_grad = True` for parameters in last `k` blocks
+            5. reset parameters of last `k` blocks
+        """
         super().__init__(model, train_loader, test_loader, checkpoint_path)
 
         teacher_state_dict = torch.load(teacher_model_path, map_location=self._device)

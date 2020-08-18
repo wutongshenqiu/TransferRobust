@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     log_dir: PurePath = root_dir / "logs"
     source_dir: PurePath = root_dir / "src"
     logger_config_file: PurePath = source_dir / "logger_config.toml"
+    tensorboard_log_dir: PurePath = root_dir / "runs"
 
     device: str = "cuda: 0"
 
@@ -57,8 +58,8 @@ class Settings(BaseSettings):
     logger_name: str = "StreamHandler"
     # log_file: Union[str, PurePath] = log_dir / "parseval_retrain_k6_0.01.log"
     # log_file: Union[str, PurePath] = log_dir / "cifar100_robust_plus_regularization_blocks8_lambda_1.log"
-    # log_file: Union[str, PurePath] = log_dir / "cifar100_pgd7.log"
-    log_file: Union[str, PurePath] = log_dir / "tl_pgd7_blocks16-18.log"
+    # log_file: Union[str, PurePath] = log_dir / "tl_pgd7_blocks16-17.log"
+    log_file: Union[str, PurePath] = log_dir / "parseval_tl_cifar100_robust_plus_regularization_blocks6_lambda1.log"
 
     @validator("logger_name")
     def check_logger_name(cls, v):

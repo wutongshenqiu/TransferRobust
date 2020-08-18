@@ -3,22 +3,32 @@ from torch.utils.data import DataLoader
 
 from typing import Tuple
 
-from .mixins import ReshapeTeacherFCLayerMixin
+from ..mixins import InitializeTensorboardMixin
 from ..parseval_trainer import ParsevalConstrainMixin
 from .tl_trainer import TransformLearningTrainer
 from src.networks import SupportedModuleType
 from src.utils import logger
 
 
-class ParsevalTransformLearningTrainer(TransformLearningTrainer, ParsevalConstrainMixin):
+class ParsevalTransformLearningTrainer(TransformLearningTrainer, ParsevalConstrainMixin, InitializeTensorboardMixin):
 
     def __init__(self, beta: float, k: int, teacher_model_path: str,
                  model: SupportedModuleType, train_loader: DataLoader,
                  test_loader: DataLoader, checkpoint_path: str = None):
+        """we obey following ideas in `parseval transform learning trainer`
+
+        Ideas:
+            1. follow ideas in `transform learning trainer`
+            2. gather layers that need constrain
+            4(optional). initialize tensorboard SummaryWriter
+            3. use loss = f(y', y) + \beta * constrain
+        """
         super().__init__(k, teacher_model_path, model, train_loader, test_loader, checkpoint_path)
 
         self.gather_constrain_layers(k)
         self._beta = beta
+
+        self.summary_writer = self.init_writer()
 
     def step_batch(self, inputs: torch.Tensor, labels: torch.Tensor) -> Tuple[float, float]:
         inputs, labels = inputs.to(self._device), labels.to(self._device)
