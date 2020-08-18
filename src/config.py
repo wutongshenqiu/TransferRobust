@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     log_dir: PurePath = root_dir / "logs"
     source_dir: PurePath = root_dir / "src"
     logger_config_file: PurePath = source_dir / "logger_config.toml"
+    tensorboard_log_dir: PurePath = root_dir / "runs"
 
     device: str = "cuda: 0"
 

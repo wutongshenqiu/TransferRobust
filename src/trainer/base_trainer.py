@@ -6,6 +6,7 @@ from typing import Tuple
 import torch
 from torch import optim
 from torch.utils.data import DataLoader
+from torch.utils.tensorboard import SummaryWriter
 
 from src import settings
 from src.utils import WarmUpLR, evaluate_accuracy, logger
@@ -69,9 +70,21 @@ class BaseTrainer:
                     end_time = time.perf_counter()
 
                     acc = self.test()
+                    average_train_loss = (running_loss / batch_number)
+                    average_train_accuracy = training_acc / batch_number
+                    epoch_cost_time = end_time - start_time
+
+                    # write loss, time, test_acc, train_acc to tensorboard
+                    if hasattr(self, "summary_writer"):
+                        self.summary_writer: SummaryWriter
+                        self.summary_writer.add_scalar("train loss", average_train_loss, ep)
+                        self.summary_writer.add_scalar("train accuracy", average_train_accuracy, ep)
+                        self.summary_writer.add_scalar("test accuracy", acc, ep)
+                        self.summary_writer.add_scalar("time per epoch", epoch_cost_time, ep)
+
                     logger.info(
-                        f"epoch: {ep}   loss: {(running_loss / batch_number):.6f}   train accuracy: {training_acc / batch_number}   "
-                        f"test accuracy: {acc}   time: {end_time - start_time:.2f}s")
+                        f"epoch: {ep}   loss: {average_train_loss:.6f}   train accuracy: {average_train_accuracy}   "
+                        f"test accuracy: {acc}   time: {epoch_cost_time:.2f}s")
 
                     if best_acc < acc:
                         best_acc = acc

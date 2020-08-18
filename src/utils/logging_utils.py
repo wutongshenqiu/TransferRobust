@@ -1,7 +1,6 @@
 import toml
 
 import logging.config
-from pathlib import PurePath
 
 from src import settings
 

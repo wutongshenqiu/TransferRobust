@@ -1,7 +1,6 @@
 from typing import Dict
 
 import torch
-from torch.nn.modules.module import Module
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 

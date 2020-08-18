@@ -82,3 +82,6 @@ class ParsevalConstrainMixin:
             self._layers_needed_constrain["conv"].append(self.model.conv1)
 
         logger.debug(f"layers needed constrain: \n{self._layers_needed_constrain}")
+        logger.debug(f"including {len(self._layers_needed_constrain['conv'])} convolutional layers, "
+                     f"{len(self._layers_needed_constrain['fc'])} fully connect layers")
+
