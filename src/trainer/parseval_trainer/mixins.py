@@ -55,11 +55,14 @@ class ParsevalConstrainMixin:
 
         return constrain_term
 
-    def gather_constrain_layers(self, k):
+    def gather_constrain_layers(self, k, ignore_first_conv: bool):
         """gather conv/fc layers in trainable layers to facilitate calculating regularization
 
         Args:
             k: the last k blocks which will be retrained
+            ignore_first_conv: whether add first convolutional layer's constrain
+                - in retrain, we should ignore first conv layer due to ignorance of first conv layer in `ResetBlockMixin`
+                - in normal parseval train, we should not ignore first conv layer
         """
         self._layers_needed_constrain = {
             "conv": [],
@@ -77,9 +80,9 @@ class ParsevalConstrainMixin:
                 if isinstance(layer, nn.Linear):
                     self._layers_needed_constrain["fc"].append(layer)
 
-        # ignore first conv layer due to ignorance of first conv layer in `ResetBlockMixin`
-        # if k == 17:
-        #     self._layers_needed_constrain["conv"].append(self.model.conv1)
+        # todo
+        if k == 17 and not ignore_first_conv:
+            self._layers_needed_constrain["conv"].append(self.model.conv1)
 
         logger.debug(f"layers needed constrain: \n{self._layers_needed_constrain}")
         logger.debug(f"including {len(self._layers_needed_constrain['conv'])} convolutional layers, "

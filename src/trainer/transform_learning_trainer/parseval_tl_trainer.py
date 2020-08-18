@@ -25,7 +25,7 @@ class ParsevalTransformLearningTrainer(TransformLearningTrainer, ParsevalConstra
         """
         super().__init__(k, teacher_model_path, model, train_loader, test_loader, checkpoint_path)
 
-        self.gather_constrain_layers(k)
+        self.gather_constrain_layers(k, ignore_first_conv=True)
         self._beta = beta
 
         self.summary_writer = self.init_writer()

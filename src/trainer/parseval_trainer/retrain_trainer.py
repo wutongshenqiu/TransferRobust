@@ -30,7 +30,7 @@ class ParsevalRetrainTrainer(RetrainTrainer, ParsevalConstrainMixin):
             k: the last k blocks which will be retrained
         """
         super().__init__(k, model, train_loader, test_loader, checkpoint_path)
-        self.gather_constrain_layers(k)
+        self.gather_constrain_layers(k, ignore_first_conv=True)
         self._beta = beta
 
     def step_batch(self, inputs: torch.Tensor, labels: torch.Tensor) -> Tuple[float, float]:
