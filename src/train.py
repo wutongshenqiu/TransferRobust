@@ -16,34 +16,37 @@ torch.backends.cudnn.benchmark = True
 if __name__ == '__main__':
     import time
     logger.info(settings)
-    # time.sleep(9000)
+    # time.sleep(3000)
 
     # tranform learning
     # model = wrn34_10(num_classes=10)
-    # for k in range(1, 8):
-    #     trainer = TransformLearningTrainer(
-    #         k=k,
-    #         teacher_model_path="./trained_models/cifar100_pgd7_train-best",
-    #         model=model,
-    #         train_loader=get_cifar_train_dataloader("cifar10"),
-    #         test_loader=get_cifar_test_dataloader("cifar10"),
-    #         # checkpoint_path="./checkpoint/tl_pgd7_block6.pth"
-    #         checkpoint_path=f"./checkpoint/tl_pgd7_blocks{k}.pth"
-    #     )
-    #     trainer.train(f"./trained_models/tl_pgd7_blocks{k}")
+    # k = 8
+    # trainer = TransformLearningTrainer(
+    #     k=k,
+    #     teacher_model_path=f"./trained_models/cifar100_robust_plus_regularization_blocks{k}_lambda1-best",
+    #     model=model,
+    #     train_loader=get_cifar_train_dataloader("cifar10"),
+    #     test_loader=get_cifar_test_dataloader("cifar10"),
+    #     # checkpoint_path="./checkpoint/tl_pgd7_block6.pth"
+    #     checkpoint_path=f"./checkpoint/tl_cifar100_robust_plus_regularization_blocks{k}_lambda1.pth"
+    # )
 
 
     # parseval tranform learning
     k = 6
+    beta = 6e-4
+    save_path = f"parseval_tl_cifar100_robust_plus_regularization_blocks{k}_lambda1_beta6e-4"
     model = parseval_retrain_wrn34_10(k=k, num_classes=10)
     trainer = ParsevalTransformLearningTrainer(
-        beta=0.0003,
+        beta=beta,
         k=k,
         teacher_model_path=f"./trained_models/cifar100_robust_plus_regularization_blocks{k}_lambda1-best",
+        # teacher_model_path=f"./trained_models/cifar100_pgd7_train-best",
         model=model,
         train_loader=get_cifar_train_dataloader("cifar10"),
         test_loader=get_cifar_test_dataloader("cifar10"),
-        checkpoint_path=f"./checkpoint/parseval_tl_cifar100_robust_plus_regularization_blocks{k}_lambda1.pth"
+        checkpoint_path=f"./checkpoint/{save_path}.pth"
+        # checkpoint_path=f"./checkpoint/parseval_tl_cifar100_pgd7_blocks{k}_lambda1.pth"
     )
 
     #
@@ -115,7 +118,7 @@ if __name__ == '__main__':
     #     checkpoint_path="./checkpoint/cifar10_parseval_normal_train.pth"
     # )
 
-    # trainer.train(f"./trained_models/parseval_retrain_cifar10_robust_plus_regularization_k{k}_{_lambda}")
-    # trainer.train(f"./trained_models/cifar100_robust_plus_regularization_blocks{k}_lambda{_lambda}")
-    trainer.train(f"./trained_models/parseval_tl_cifar100_robust_plus_regularization_blocks{k}_lambda1")
+    trainer.train(f"./trained_models/{save_path}")
+    # trainer.train(f"./trained_models/parseval_tl_cifar100_pgd7_blocks{k}_lambda1_beta6e-4")
+    # trainer.train(f"./trained_models/tl_cifar100_robust_plus_regularization_blocks{k}_lambda1")
     # trainer.train(f"./trained_models/cifar100_pgd7_train")

@@ -40,7 +40,7 @@ class ParsevalRetrainTrainer(RetrainTrainer, ParsevalConstrainMixin):
         outputs = self.model(inputs)
 
         constrain_term = self.sum_layers_constrain()
-        logger.debug(f"batch constrain: {constrain_term}")
+        # logger.debug(f"batch constrain: {constrain_term}")
         loss = self.criterion(outputs, labels) + (self._beta / 2) * constrain_term
         loss.backward()
         self.optimizer.step()

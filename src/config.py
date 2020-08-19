@@ -56,10 +56,14 @@ class Settings(BaseSettings):
         return v
 
     logger_name: str = "StreamHandler"
-    # log_file: Union[str, PurePath] = log_dir / "parseval_retrain_k6_0.01.log"
     # log_file: Union[str, PurePath] = log_dir / "cifar100_robust_plus_regularization_blocks8_lambda_1.log"
-    # log_file: Union[str, PurePath] = log_dir / "tl_pgd7_blocks16-17.log"
-    log_file: Union[str, PurePath] = log_dir / "parseval_tl_cifar100_robust_plus_regularization_blocks6_lambda1.log"
+    # log_file: Union[str, PurePath] = log_dir / "tl_cifar100_robust_plus_regularization_attack.log"
+    # log_file: Union[str, PurePath] = log_dir / "parseval_tl_cifar100_robust_plus_regularization_beta3e-4_attack.log"
+    log_file: Union[str, PurePath] = log_dir / "parseval_tl_cifar100_robust_plus_regularization_blocks6_lambda1_beta6e-4.log"
+    # log_file: Union[str, PurePath] = log_dir / "parseval_tl_cifar100_robust_plus_regularization_blocks8_lambda1_beta1e-3.log"
+    # log_file: Union[str, PurePath] = log_dir / "parseval_tl_cifar100_pgd7_blocks4_lambda1_beta3e-4.log"
+    # log_file: Union[str, PurePath] = log_dir / "parseval_tl_cifar100_pgd7_beta3e-4_attack.log"
+    # log_file: Union[str, PurePath] = log_dir / "tl_cifar100_robust_plus_regularization_blocks8_lambda1.log"
 
     @validator("logger_name")
     def check_logger_name(cls, v):

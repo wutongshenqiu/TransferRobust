@@ -111,7 +111,7 @@ def test_attack(model: nn.Module, test_loader, attacker, params: Dict, device: s
 
 
 if __name__ == '__main__':
-    from .trainer import parseval_retrain_wrn34_10
+    from src.networks import parseval_retrain_wrn34_10, wrn34_10
     from .utils import get_cifar_test_dataloader, get_cifar_train_dataloader
     import time
     import json
@@ -126,9 +126,10 @@ if __name__ == '__main__':
     test_loader = get_cifar_test_dataloader("cifar10")
     
     result = {}
-    model = parseval_retrain_wrn34_10(k=6, num_classes=10)
-    for i in [1, 0.1, 0.05, 0.01]:
-        model_path = f"./trained_models/parseval_retrain_cifar10_robust_plus_regularization_k6_{i}-best"
+    # model = wrn34_10(num_classes=10)
+    for k in [8]:
+        model = parseval_retrain_wrn34_10(k=k, num_classes=10)
+        model_path = f"./trained_models/parseval_tl_cifar100_pgd7_blocks{k}_lambda1-best"
         logger.debug(f"load from `{model_path}`")
         model.load_state_dict(torch.load(model_path, map_location=settings.device))
         model.to(settings.device)
@@ -138,8 +139,8 @@ if __name__ == '__main__':
 
         logger.info(f"costing time: {end_time-start_time:.2f} secs")
 
-        result[i] = acc
+        result[k] = acc
 
-    logger.info(f"robustness result: {result}")
-    with open("./trained_models/parseval_cifar10_retrain_robust2.json", "w") as f:
-        f.write(json.dumps(result))
+    # logger.info(f"robustness result: {result}")
+    # with open("./trained_models/tl_pgd7_robust.json", "w") as f:
+        # f.write(json.dumps(result))
