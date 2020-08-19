@@ -42,13 +42,14 @@ class ParsevalConstrainMixin:
             return _scaling
 
         # flatten convolutional layer to c_out * (c_in * kernel_size) matrix
-        flatten_matrix = layer.weight.view(layer.out_channels, -1)
+        # put it to gpu to accelerate matrix multiplication
+        flatten_matrix = layer.weight.view(layer.out_channels, -1).to(self._device)
         # weight matrix * transpose of weight matrix
         wwt = torch.matmul(flatten_matrix, flatten_matrix.T)
 
         scaling = calculate_scaling(layer.kernel_size, layer.stride)
-        scaling_identity_matrix = torch.eye(wwt.shape[0]) / scaling
-        scaling_identity_matrix = scaling_identity_matrix.to(self._device)
+        scaling_identity_matrix = torch.eye(wwt.shape[0], device=self._device) / scaling
+        # scaling_identity_matrix = scaling_identity_matrix.to(self._device)
 
         constrain_term = torch.norm(wwt - scaling_identity_matrix) ** 2
         # logger.debug(f"convolutional constrain: {constrain_term}")

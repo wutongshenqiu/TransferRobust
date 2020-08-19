@@ -60,7 +60,7 @@ class Settings(BaseSettings):
     # log_file: Union[str, PurePath] = log_dir / "tl_cifar100_robust_plus_regularization_attack.log"
     # log_file: Union[str, PurePath] = log_dir / "parseval_tl_cifar100_robust_plus_regularization_beta3e-4_attack.log"
     log_file: Union[str, PurePath] = log_dir / "parseval_tl_cifar100_robust_plus_regularization_blocks6_lambda1_beta6e-4.log"
-    # log_file: Union[str, PurePath] = log_dir / "parseval_tl_cifar100_robust_plus_regularization_blocks8_lambda1_beta1e-3.log"
+    # log_file: Union[str, PurePath] = log_dir / "parseval_tl_cifar100_robust_plus_regularization_blocks6_lambda1_beta1e-3.log"
     # log_file: Union[str, PurePath] = log_dir / "parseval_tl_cifar100_pgd7_blocks4_lambda1_beta3e-4.log"
     # log_file: Union[str, PurePath] = log_dir / "parseval_tl_cifar100_pgd7_beta3e-4_attack.log"
     # log_file: Union[str, PurePath] = log_dir / "tl_cifar100_robust_plus_regularization_blocks8_lambda1.log"
