@@ -33,21 +33,21 @@ if __name__ == '__main__':
 
 
     # parseval tranform learning
-    k = 6
-    beta = 6e-4
-    save_path = f"parseval_tl_cifar100_robust_plus_regularization_blocks{k}_lambda1_beta6e-4"
-    model = parseval_retrain_wrn34_10(k=k, num_classes=10)
-    trainer = ParsevalTransformLearningTrainer(
-        beta=beta,
-        k=k,
-        teacher_model_path=f"./trained_models/cifar100_robust_plus_regularization_blocks{k}_lambda1-best",
-        # teacher_model_path=f"./trained_models/cifar100_pgd7_train-best",
-        model=model,
-        train_loader=get_cifar_train_dataloader("cifar10"),
-        test_loader=get_cifar_test_dataloader("cifar10"),
-        checkpoint_path=f"./checkpoint/{save_path}.pth"
-        # checkpoint_path=f"./checkpoint/parseval_tl_cifar100_pgd7_blocks{k}_lambda1.pth"
-    )
+    # k = 8
+    # beta = 1e-3
+    # # save_path = f"parseval_tl_cifar100_robust_plus_regularization_blocks{k}_lambda1_beta1e-3"
+    # save_path = f"parseval_tl_cifar100_pgd7_blocks{k}_lambda1_beta1e-3"
+    # model = parseval_retrain_wrn34_10(k=k, num_classes=10)
+    # trainer = ParsevalTransformLearningTrainer(
+    #     beta=beta,
+    #     k=k,
+    #     # teacher_model_path=f"./trained_models/cifar100_robust_plus_regularization_blocks{k}_lambda1-best",
+    #     teacher_model_path=f"./trained_models/cifar100_pgd7_train-best",
+    #     model=model,
+    #     train_loader=get_cifar_train_dataloader("cifar10"),
+    #     test_loader=get_cifar_test_dataloader("cifar10"),
+    #     checkpoint_path=f"./checkpoint/{save_path}.pth"
+    # )
 
     #
     # trainer = ADVTrainer(
@@ -92,21 +92,20 @@ if __name__ == '__main__':
 
 
     # robust plus regularization
-    # k = 8
-    # _lambda = 1
-    # model = wrn34_10(num_classes=100)
-    # trainer = RobustPlusRegularizationTrainer(
-    #     k=k,
-    #     _lambda=_lambda,
-    #     model=model,
-    #     train_loader=get_cifar_train_dataloader("cifar100"),
-    #     test_loader=get_cifar_test_dataloader("cifar100"),
-    #     attacker=LinfPGDAttack,
-    #     params=attack_params.get("LinfPGDAttack"),
-    #     checkpoint_path=f"./checkpoint/cifar100_robust_plus_regularization_blocks{k}_lambda{_lambda}.pth",
-    #     # use sub directory to support multi SummaryWriter
-    #     # log_dir=f"./runs/lambda_{_lambda}",
-    # )
+    k = 8
+    _lambda = 0.05
+    model = wrn34_10(num_classes=100)
+    save_path = f"cifar100_robust_plus_regularization_blocks{k}_lambda{_lambda}"
+    trainer = RobustPlusRegularizationTrainer(
+        k=k,
+        _lambda=_lambda,
+        model=model,
+        train_loader=get_cifar_train_dataloader("cifar100"),
+        test_loader=get_cifar_test_dataloader("cifar100"),
+        attacker=LinfPGDAttack,
+        params=attack_params.get("LinfPGDAttack"),
+        checkpoint_path=f"./checkpoint/{save_path}.pth",
+    )
 
     # parseval normal train
     # from src.networks import parseval_normal_wrn34_10

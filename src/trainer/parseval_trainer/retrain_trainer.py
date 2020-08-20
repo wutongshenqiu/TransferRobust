@@ -31,6 +31,8 @@ class ParsevalRetrainTrainer(RetrainTrainer, ParsevalConstrainMixin):
         """
         super().__init__(k, model, train_loader, test_loader, checkpoint_path)
         self.gather_constrain_layers(k, ignore_first_conv=True)
+
+        logger.debug(f"beta: {beta}")
         self._beta = beta
 
     def step_batch(self, inputs: torch.Tensor, labels: torch.Tensor) -> Tuple[float, float]:

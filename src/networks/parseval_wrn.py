@@ -74,6 +74,10 @@ class ParsevalNetworkBlock(nn.Module):
     def forward(self, x):
         return self.layer(x)
 
+    @classmethod
+    def reset_current_block(cls):
+        cls.current_block = 0
+
 
 class ParsevalWideResNet(nn.Module):
     def __init__(self, k: int, depth, num_classes, widen_factor=1, dropRate=0.0):
@@ -96,6 +100,7 @@ class ParsevalWideResNet(nn.Module):
         self.block2 = ParsevalNetworkBlock(k, n, nChannels[1], nChannels[2], 2, dropRate)
         # 3rd block
         self.block3 = ParsevalNetworkBlock(k, n, nChannels[2], nChannels[3], 2, dropRate)
+        ParsevalNetworkBlock.reset_current_block()
         # global average pooling and classifier
         self.bn1 = nn.BatchNorm2d(nChannels[3])
         self.relu = nn.LeakyReLU(negative_slope=0.1)

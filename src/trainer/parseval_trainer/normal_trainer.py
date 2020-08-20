@@ -23,6 +23,8 @@ class ParsevalNormalTrainer(BaseTrainer, ParsevalConstrainMixin):
         super().__init__(model, train_loader, test_loader, checkpoint_path)
         self._blocks = WRN34Block(model)
         self.gather_constrain_layers(17, ignore_first_conv=False)
+
+        logger.debug(f"beta: {beta}")
         self._beta = beta
 
     def step_batch(self, inputs: torch.Tensor, labels: torch.Tensor) -> Tuple[float, float]:

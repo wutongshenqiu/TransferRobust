@@ -2,13 +2,14 @@ import torch
 from torch.utils.data import DataLoader
 
 from .mixins import ReshapeTeacherFCLayerMixin
+from ..mixins import InitializeTensorboardMixin
 from ..normal_trainer import NormalTrainer
 from ..retrain_trainer import ResetBlockMixin, FreezeModelMixin, WRN34Block
 from src.networks import SupportedModuleType
 from src.utils import logger
 
 
-class TransformLearningTrainer(NormalTrainer, ResetBlockMixin, FreezeModelMixin, ReshapeTeacherFCLayerMixin):
+class TransformLearningTrainer(NormalTrainer, ResetBlockMixin, FreezeModelMixin, ReshapeTeacherFCLayerMixin, InitializeTensorboardMixin):
 
     def __init__(self, k: int, teacher_model_path: str,
                  model: SupportedModuleType, train_loader: DataLoader,
@@ -34,9 +35,7 @@ class TransformLearningTrainer(NormalTrainer, ResetBlockMixin, FreezeModelMixin,
         self.freeze_model()
         self.reset_and_unfreeze_last_k_blocks(k)
 
-
-        
-
+        self.summary_writer = self.init_writer()
 
 
 if __name__ == '__main__':
