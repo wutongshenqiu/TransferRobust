@@ -148,3 +148,4 @@ trained_models/
 logs/
 checkpoint/
 runs/
+.vscode/

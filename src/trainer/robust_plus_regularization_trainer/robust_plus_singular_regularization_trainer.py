@@ -2,17 +2,15 @@ from typing import Dict
 
 import torch
 from torch.utils.data import DataLoader
-from torch.utils.tensorboard import SummaryWriter
 
-from .adv_trainer import ADVTrainer
-from .retrain_trainer import WRN34Block
-from .mixins import InitializeTensorboardMixin
+from trainer.adv_trainer import ADVTrainer
+from trainer.retrain_trainer import WRN34Block
+from trainer.mixins import InitializeTensorboardMixin
 from src.utils import logger
 from src.networks import SupportedModuleType
 
 
-
-class RobustPlusRegularizationTrainer(ADVTrainer, InitializeTensorboardMixin):
+class RobustPlusSingularRegularizationTrainer(ADVTrainer, InitializeTensorboardMixin):
     def __init__(self, k: int, _lambda: float, model: SupportedModuleType, train_loader: DataLoader,
                  test_loader: DataLoader, attacker, params: Dict, checkpoint_path: str = None):
         super().__init__(model, train_loader, test_loader,

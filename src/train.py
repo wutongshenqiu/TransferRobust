@@ -3,8 +3,9 @@ import torch
 from .networks import wrn34_10, parseval_retrain_wrn34_10
 
 from .trainer import (ADVTrainer, RetrainTrainer, TransformLearningTrainer,
-                      ParsevalTransformLearningTrainer, RobustPlusRegularizationTrainer,
-                      ParsevalRetrainTrainer, ParsevalNormalTrainer)
+                      ParsevalTransformLearningTrainer, RobustPlusSingularRegularizationTrainer,
+                      ParsevalRetrainTrainer, ParsevalNormalTrainer,
+                      RobustPlusAllRegularizationTrainer)
 
 from . import settings
 from .utils import get_cifar_test_dataloader, get_cifar_train_dataloader, logger
@@ -96,7 +97,7 @@ if __name__ == '__main__':
     _lambda = 0.05
     model = wrn34_10(num_classes=100)
     save_path = f"cifar100_robust_plus_regularization_blocks{k}_lambda{_lambda}"
-    trainer = RobustPlusRegularizationTrainer(
+    trainer = RobustPlusSingularRegularizationTrainer(
         k=k,
         _lambda=_lambda,
         model=model,
