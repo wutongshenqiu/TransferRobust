@@ -51,7 +51,7 @@ class ParsevalConstrainMixin:
         # put it to gpu to accelerate matrix multiplication
         flatten_matrix = layer.weight.view(layer.out_channels, -1).to(self._device)
         # choose the lower dimension for output matrix
-        if flatten_matrix.shape[0] < flatten_matrix.shape[1]:
+        if flatten_matrix.shape[0] <= flatten_matrix.shape[1]:
             # weight matrix * transpose of weight matrix
             wwt = torch.matmul(flatten_matrix, flatten_matrix.T)
         else:

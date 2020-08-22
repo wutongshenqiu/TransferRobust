@@ -3,9 +3,9 @@ from typing import Dict
 import torch
 from torch.utils.data import DataLoader
 
-from trainer.adv_trainer import ADVTrainer
-from trainer.retrain_trainer import WRN34Block
-from trainer.mixins import InitializeTensorboardMixin
+from ..adv_trainer import ADVTrainer
+from ..retrain_trainer import WRN34Block
+from ..mixins import InitializeTensorboardMixin
 from src.utils import logger
 from src.networks import SupportedModuleType
 
