@@ -55,7 +55,7 @@ class Settings(BaseSettings):
             raise ValueError("`dataset_name` must be specified as `cifar10` or `cifar100`")
         return v
 
-    logger_name: str = "StreamHandler"
+    logger_name: str = "FileLogger"
     log_file: Union[str, PurePath] = log_dir / "cifar100_robust_plus_regularization_blocks8_lambda_0.05.log"
     # log_file: Union[str, PurePath] = log_dir / "tl_cifar100_robust_plus_regularization_attack.log"
     # log_file: Union[str, PurePath] = log_dir / "parseval_tl_cifar100_robust_plus_regularization_lambda1_beta3e-4_attack.log"

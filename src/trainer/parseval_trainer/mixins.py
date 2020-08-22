@@ -24,8 +24,14 @@ class ParsevalConstrainMixin:
         )
 
     def _fully_connect_constrain(self, layer: nn.Linear) -> torch.Tensor:
-        # weight matrix * transpose of weight matrix
-        wwt = torch.matmul(layer.weight, layer.weight.T)
+        # choose the lower dimension for output matrix
+        if layer.weight.shape[0] <= layer.weight.shape[1]:
+            # weight matrix * transpose of weight matrix
+            wwt = torch.matmul(layer.weight, layer.weight.T)
+        else:
+            # transpose of weight matrix * weight matrix
+            wwt = torch.matmul(layer.weight.T, layer.weight)
+
         identity_matrix = torch.eye(wwt.shape[0]).to(self._device)
 
         constrain_term = torch.norm(wwt - identity_matrix) ** 2
@@ -44,8 +50,13 @@ class ParsevalConstrainMixin:
         # flatten convolutional layer to c_out * (c_in * kernel_size) matrix
         # put it to gpu to accelerate matrix multiplication
         flatten_matrix = layer.weight.view(layer.out_channels, -1).to(self._device)
-        # weight matrix * transpose of weight matrix
-        wwt = torch.matmul(flatten_matrix, flatten_matrix.T)
+        # choose the lower dimension for output matrix
+        if flatten_matrix.shape[0] < flatten_matrix.shape[1]:
+            # weight matrix * transpose of weight matrix
+            wwt = torch.matmul(flatten_matrix, flatten_matrix.T)
+        else:
+            # transpose of weight matrix * weight matrix
+            wwt = torch.matmul(flatten_matrix.T, flatten_matrix)
 
         scaling = calculate_scaling(layer.kernel_size, layer.stride)
         scaling_identity_matrix = torch.eye(wwt.shape[0], device=self._device) / scaling
