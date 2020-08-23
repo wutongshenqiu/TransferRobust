@@ -56,21 +56,6 @@ class Settings(BaseSettings):
         return v
 
     logger_name: str = "FileLogger"
-    log_file: Union[str, PurePath] = log_dir / "cifar100_robust_plus_regularization_blocks8_lambda_0.05.log"
-    # log_file: Union[str, PurePath] = log_dir / "tl_cifar100_robust_plus_regularization_attack.log"
-    # log_file: Union[str, PurePath] = log_dir / "parseval_tl_cifar100_robust_plus_regularization_lambda1_beta3e-4_attack.log"
-    # log_file: Union[str, PurePath] = log_dir / "parseval_tl_cifar100_robust_plus_regularization_lambda1_beta6e-4_attack.log"
-    # log_file: Union[str, PurePath] = log_dir / "parseval_tl_cifar100_robust_plus_regularization_lambda1_beta1e-3_attack.log"
-    # log_file: Union[str, PurePath] = log_dir / "parseval_tl_cifar100_robust_plus_regularization_blocks4_lambda1_beta6e-4.log"
-    # log_file: Union[str, PurePath] = log_dir / "parseval_tl_cifar100_robust_plus_regularization_blocks4_lambda1_beta3e-4.log"
-    # log_file: Union[str, PurePath] = log_dir / "parseval_tl_cifar100_robust_plus_regularization_blocks4_lambda1_beta1e-3.log"
-    # log_file: Union[str, PurePath] = log_dir / "parseval_tl_cifar100_pgd7_blocks6_lambda1_beta3e-4.log"
-    # log_file: Union[str, PurePath] = log_dir / "parseval_tl_cifar100_pgd7_blocks8_lambda1_beta6e-4.log"
-    # log_file: Union[str, PurePath] = log_dir / "parseval_tl_cifar100_pgd7_blocks8_lambda1_beta1e-3.log"
-    # log_file: Union[str, PurePath] = log_dir / "parseval_tl_cifar100_pgd7_lambda1_beta3e-4_attack.log"
-    # log_file: Union[str, PurePath] = log_dir / "parseval_tl_cifar100_pgd7_lambda1_beta6e-4_attack.log"
-    # log_file: Union[str, PurePath] = log_dir / "parseval_tl_cifar100_pgd7_lambda1_beta1e-3_attack.log"
-    # log_file: Union[str, PurePath] = log_dir / "tl_cifar100_robust_plus_regularization_blocks8_lambda1.log"
 
     @validator("logger_name")
     def check_logger_name(cls, v):

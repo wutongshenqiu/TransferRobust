@@ -22,9 +22,10 @@ class LinfPGDAttack:
 
     def __init__(self, model: torch.nn.Module, clip_min=0, clip_max=1,
                  random_init: int = 1, epsilon=8/255, step_size=2/255, num_steps=20,
-                 loss_function: Callable[[Any], Tensor] = nn.CrossEntropyLoss()
+                 loss_function: Callable[[Any], Tensor] = nn.CrossEntropyLoss(),
+                 dataset_name: str = settings.dataset_name
                  ):
-        dataset_mean, dataset_std = get_mean_and_std(settings.dataset_name)
+        dataset_mean, dataset_std = get_mean_and_std(dataset_name)
         mean = torch.tensor(dataset_mean).view(3, 1, 1).to(settings.device)
         std = torch.tensor(dataset_std).view(3, 1, 1).to(settings.device)
 
@@ -122,6 +123,7 @@ if __name__ == '__main__':
         "epsilon": 8/255,
         "step_size": 2/255,
         "num_steps": 20,
+        "dataset_name": "cifar10",
     }
     test_loader = get_cifar_test_dataloader("cifar10")
     

@@ -37,9 +37,11 @@ def clamp(t: Tensor, lower_limit, upper_limit):
 
 def get_mean_and_std(dataset: str = settings.dataset_name) -> Tuple[Tuple, Tuple]:
     if dataset == "cifar100":
+        logger.debug(f"get mean and std of cifar100")
         mean = CIFAR100_TRAIN_MEAN
         std = CIFAR100_TRAIN_STD
     elif dataset == "cifar10":
+        logger.debug(f"get mean and std of cifar10")
         mean = CIFAR10_TRAIN_MEAN
         std = CIFAR10_TRAIN_STD
     else:
