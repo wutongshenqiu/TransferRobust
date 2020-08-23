@@ -9,7 +9,8 @@ from src.networks import SupportedModuleType
 from src.utils import logger
 
 
-class TransformLearningTrainer(NormalTrainer, ResetBlockMixin, FreezeModelMixin, ReshapeTeacherFCLayerMixin, InitializeTensorboardMixin):
+class TransferLearningTrainer(NormalTrainer, ResetBlockMixin, FreezeModelMixin,
+                              ReshapeTeacherFCLayerMixin, InitializeTensorboardMixin):
 
     def __init__(self, k: int, teacher_model_path: str,
                  model: SupportedModuleType, train_loader: DataLoader,
@@ -42,7 +43,7 @@ if __name__ == '__main__':
     from src.networks import wrn34_10
     from src.utils import get_cifar_test_dataloader, get_cifar_train_dataloader
 
-    trainer = TransformLearningTrainer(
+    trainer = TransferLearningTrainer(
         k=6,
         teacher_model_path="./trained_models/cifar100_pgd7_train-best",
         model=wrn34_10(num_classes=10),

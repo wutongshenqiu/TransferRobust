@@ -2,8 +2,8 @@ import torch
 
 from .networks import wrn34_10, parseval_retrain_wrn34_10
 
-from .trainer import (ADVTrainer, RetrainTrainer, TransformLearningTrainer,
-                      ParsevalTransformLearningTrainer, RobustPlusSingularRegularizationTrainer,
+from .trainer import (ADVTrainer, RetrainTrainer, TransferLearningTrainer,
+                      ParsevalTransferLearningTrainer, RobustPlusSingularRegularizationTrainer,
                       ParsevalRetrainTrainer, ParsevalNormalTrainer,
                       RobustPlusAllRegularizationTrainer)
 
@@ -22,7 +22,7 @@ if __name__ == '__main__':
     # tranform learning
     # model = wrn34_10(num_classes=10)
     # k = 8
-    # trainer = TransformLearningTrainer(
+    # trainer = TransferLearningTrainer(
     #     k=k,
     #     teacher_model_path=f"./trained_models/cifar100_robust_plus_regularization_blocks{k}_lambda1-best",
     #     model=model,
@@ -39,7 +39,7 @@ if __name__ == '__main__':
     # # save_path = f"parseval_tl_cifar100_robust_plus_regularization_blocks{k}_lambda1_beta1e-3"
     # save_path = f"parseval_tl_cifar100_pgd7_blocks{k}_lambda1_beta1e-3"
     # model = parseval_retrain_wrn34_10(k=k, num_classes=10)
-    # trainer = ParsevalTransformLearningTrainer(
+    # trainer = ParsevalTransferLearningTrainer(
     #     beta=beta,
     #     k=k,
     #     # teacher_model_path=f"./trained_models/cifar100_robust_plus_regularization_blocks{k}_lambda1-best",

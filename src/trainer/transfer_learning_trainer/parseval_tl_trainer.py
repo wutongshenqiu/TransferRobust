@@ -5,12 +5,13 @@ from typing import Tuple
 
 from ..mixins import InitializeTensorboardMixin
 from ..parseval_trainer import ParsevalConstrainMixin
-from .tl_trainer import TransformLearningTrainer
+from .tl_trainer import TransferLearningTrainer
 from src.networks import SupportedModuleType
 from src.utils import logger
 
 
-class ParsevalTransformLearningTrainer(TransformLearningTrainer, ParsevalConstrainMixin, InitializeTensorboardMixin):
+class ParsevalTransferLearningTrainer(TransferLearningTrainer, ParsevalConstrainMixin,
+                                      InitializeTensorboardMixin):
 
     def __init__(self, beta: float, k: int, teacher_model_path: str,
                  model: SupportedModuleType, train_loader: DataLoader,
@@ -18,7 +19,7 @@ class ParsevalTransformLearningTrainer(TransformLearningTrainer, ParsevalConstra
         """we obey following ideas in `parseval transform learning trainer`
 
         Ideas:
-            1. follow ideas in `transform learning trainer`
+            1. follow ideas in `transfer learning trainer`
             2. gather layers that need constrain
             4(optional). initialize tensorboard SummaryWriter
             3. use loss = f(y', y) + \beta * constrain
@@ -53,7 +54,7 @@ if __name__ == '__main__':
     from src.networks import wrn34_10
     from src.utils import get_cifar_test_dataloader, get_cifar_train_dataloader
 
-    trainer = ParsevalTransformLearningTrainer(
+    trainer = ParsevalTransferLearningTrainer(
         beta=0.0003,
         k=6,
         teacher_model_path="./trained_models/cifar100_pgd7_train-best",
