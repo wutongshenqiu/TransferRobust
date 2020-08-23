@@ -63,6 +63,9 @@ class WideResNet(nn.Module):
         self.fc = nn.Linear(nChannels[3], num_classes)
         self.nChannels = nChannels[3]
 
+        # this attribute is for `learning without forgetting`
+        self._feature_representations = None
+
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
@@ -79,8 +82,15 @@ class WideResNet(nn.Module):
         out = self.block3(out)
         out = self.relu(self.bn1(out))
         out = F.avg_pool2d(out, 8)
+        # store feature representations
+        self._feature_representations = out
         out = out.view(-1, self.nChannels)
         return self.fc(out)
+
+    def get_feature_representations(self) -> torch.Tensor:
+        if self._feature_representations is not None:
+            return self._feature_representations
+        raise AttributeError("can not obtain `feature representations` without input!")
 
 
 def wrn34_10(num_classes=10):
