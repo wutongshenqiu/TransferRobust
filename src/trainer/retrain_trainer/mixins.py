@@ -29,6 +29,36 @@ class ResetBlockMixin:
             if param.requires_grad:
                 logger.debug(f"name: {name}, size: {param.size()}")
 
+    def reset_last_k_blocks(self, k: int):
+        """reset layers in last k blocks
+
+        Args:
+            k: the last k blocks which will be retrained
+        """
+        for i in range(17, 17-k, -1):
+            block = getattr(self._blocks, f"block{i}")
+            for layer in block:
+                if hasattr(layer, "reset_parameters"):
+                    layer.reset_parameters()
+
+        logger.debug(f"reset last {k} blocks")
+
+    def unfreeze_last_k_blocks(self, k: int):
+        """unfreeze layers in last k blocks
+
+        Args:
+            k: the last k blocks which will be retrained
+        """
+        for i in range(17, 17-k, -1):
+            block = getattr(self._blocks, f"block{i}")
+            for p in block.parameters():
+                p.requires_grad = True
+
+        logger.debug("trainable layers")
+        for name, param in self.model.named_parameters():
+            if param.requires_grad:
+                logger.debug(f"name: {name}, size: {param.size()}")
+
 
 class FreezeModelMixin:
     """freeze all parameters of model"""
@@ -39,3 +69,9 @@ class FreezeModelMixin:
             p.requires_grad = False
 
         logger.debug(f"all parameters of model are freezed")
+
+    def unfreeze_model(self):
+        for p in self.model.parameters():
+            p.requires_grad = True
+
+        logger.debug(f"all parameters of model are unfreezed")

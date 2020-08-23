@@ -23,19 +23,179 @@ questions:
 
 from torch.utils.data import Dataset, DataLoader
 import torch
+from torch import optim
 from torch import Tensor
+from torch.utils.tensorboard import SummaryWriter
 
 from typing import Tuple
+import time
 
 from src.networks import SupportedModuleType
+from .mixins import ReshapeTeacherFCLayerMixin
+from ..mixins import InitializeTensorboardMixin
+from ..retrain_trainer import ResetBlockMixin, FreezeModelMixin, WRN34Block
+from ..base_trainer import BaseTrainer
+from src.utils import logger
 
 
-class LWFTransferLearningTrainer
+class LWFTransferLearningTrainer(BaseTrainer, ReshapeTeacherFCLayerMixin,
+                                 ResetBlockMixin, FreezeModelMixin, InitializeTensorboardMixin):
+
+    def __init__(self, _lambda: float, teacher_model_path: str,
+                 model: SupportedModuleType, train_loader: DataLoader,
+                 test_loader: DataLoader, checkpoint_path: str = None):
+        """`learning without forgetting` in transfer learning
+
+        Args:
+            _lambda: feature representation similarity penalty
+        """
+        super().__init__(model, train_loader, test_loader, checkpoint_path)
+
+        teacher_state_dict = torch.load(teacher_model_path, map_location=self._device)
+        self.reshape_teacher_fc_layer(teacher_state_dict)
+        logger.info(f"load from teacher model: \n {teacher_model_path}")
+        self.model.load_state_dict(teacher_state_dict)
+        # reset fc layer
+        self.reset_last_k_blocks(1)
+
+        dataset_with_rft = DatasetWithRobustFeatureRepresentations(train_loader, self.model, self._device)
+        self._train_loader = DataLoader(dataset_with_rft, batch_size=train_loader.batch_size,
+                                        num_workers=train_loader.num_workers, shuffle=True)
+        self._lambda = _lambda
+
+        self.summary_writer = self.init_writer()
+
+    def step_batch(self, inputs: Tuple[Tensor, Tensor], labels: torch.Tensor, optimizer: optim.optimizer) -> Tuple[float, float]:
+        inputs, robust_feature_representations = inputs[0].to(self._device), inputs[1].to(self._device)
+        labels = labels.to(self._device)
+
+        optimizer.zero_grad()
+
+        outputs = self.model(inputs)
+        running_feature_representations = self.model.get_feature_representations()
+
+        loss = self.criterion(outputs, labels) + self._lambda * \
+               torch.mean(torch.norm(robust_feature_representations - running_feature_representations, p=1, dim=1))
+
+        loss.backward()
+        optimizer.step()
+
+        batch_training_acc = (outputs.argmax(dim=1) == labels).float().mean().item()
+        batch_running_loss = loss.item()
+
+        return batch_running_loss, batch_training_acc
+
+
+    def _init_optimizer(self) -> None:
+        """override `_init_optimizer` of super class
+
+        we provide two optimizer, `fc_optimizer` and `all_optimizer`
+            - `fc_optimizer`: only train fc layer, use for warm-start
+            - `all_optimizer`: train all layers
+        """
+
+        self.fc_optimizer = optim.SGD(
+            self.model.fc.parameters(),
+            # fixme
+            # lr 如何设置
+            lr=NotImplemented,
+            momentum=settings.momentum,
+            weight_decay=settings.weight_decay
+        )
+
+        self.all_optimizer = optim.SGD(
+            self.model.parameters(),
+            # fixme
+            # lr 如何设置
+            lr=NotImplemented,
+            momentum=settings.momentum,
+            weight_decay=settings.weight_decay
+        )
+
+    def train(self, save_path):
+        """override `train` of super class
+
+        if current epochs < warm-start epochs, we should use optimizer `fc_optimizer`,
+        otherwise, we should use optimizer `all_optimizer`
+        """
+        batch_number = len(self._train_loader)
+        best_acc = self.best_acc
+        start_epoch = self.start_epoch
+
+        logger.info(f"starting epoch: {start_epoch}")
+        logger.info(f"start lr: {self.current_lr}")
+        logger.info(f"best accuracy: {best_acc}")
+
+        for ep in range(start_epoch, self._train_epochs + 1):
+            # fixme
+            # 是否需要调节
+            self._adjust_lr(ep)
+
+            # fixme
+            # warm_start_epochs 取多少
+            only_fc_unfreezed_flag = False
+            if ep < warm_start_epochs:
+                if not only_fc_unfreezed_flag:
+                    # freeze all layers except fc layer
+                    self.freeze_model()
+                    self.unfreeze_last_k_blocks(1)
+                    only_fc_unfreezed_flag = True
+                optimizer = self.fc_optimizer
+            else:
+                if only_fc_unfreezed_flag:
+                    # unfreeze all layers
+                    self.unfreeze_model()
+                optimizer = self.all_optimizer
+
+            # show current learning rate
+            logger.debug(f"lr: {self.current_lr}")
+
+            training_acc, running_loss = 0, .0
+            start_time = time.perf_counter()
+
+            for index, data in enumerate(self._train_loader):
+                batch_running_loss, batch_training_acc = self.step_batch(data[0], data[1], optimizer)
+
+                training_acc += batch_training_acc
+                running_loss += batch_running_loss
+
+                # warm up learning rate
+                if ep <= self._warm_up_epochs:
+                    self.warm_up_scheduler.step()
+
+                if index % batch_number == batch_number - 1:
+                    end_time = time.perf_counter()
+
+                    acc = self.test()
+                    average_train_loss = (running_loss / batch_number)
+                    average_train_accuracy = training_acc / batch_number
+                    epoch_cost_time = end_time - start_time
+
+                    # write loss, time, test_acc, train_acc to tensorboard
+                    if hasattr(self, "summary_writer"):
+                        self.summary_writer: SummaryWriter
+                        self.summary_writer.add_scalar("train loss", average_train_loss, ep)
+                        self.summary_writer.add_scalar("train accuracy", average_train_accuracy, ep)
+                        self.summary_writer.add_scalar("test accuracy", acc, ep)
+                        self.summary_writer.add_scalar("time per epoch", epoch_cost_time, ep)
+
+                    logger.info(
+                        f"epoch: {ep}   loss: {average_train_loss:.6f}   train accuracy: {average_train_accuracy}   "
+                        f"test accuracy: {acc}   time: {epoch_cost_time:.2f}s")
+
+                    if best_acc < acc:
+                        best_acc = acc
+                        self._save_best_model(save_path, ep, acc)
+
+            self._save_checkpoint(ep, best_acc)
+
+        logger.info("finished training")
+        logger.info(f"best accuracy on test set: {best_acc}")
 
 
 class DatasetWithRobustFeatureRepresentations(Dataset):
 
-    def __init__(self, origin_train_loader: DataLoader, model: SupportedModuleType):
+    def __init__(self, origin_train_loader: DataLoader, model: SupportedModuleType, device: torch.device):
         """extend origin dataset with robust feature representations
 
         Args:
@@ -52,7 +212,7 @@ class DatasetWithRobustFeatureRepresentations(Dataset):
 
         model.eval()
         for inputs, labels in origin_train_loader:
-            inputs, labels = inputs.to(settings.device), labels.to(settings.device)
+            inputs, labels = inputs.to(device), labels.to(device)
             inputs_tensor_list.append(inputs.detach().cpu())
             model(inputs)
             robust_feature_representations = model.get_feature_representations()
