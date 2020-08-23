@@ -145,6 +145,7 @@ class LWFTransferLearningTrainer(BaseTrainer, ReshapeTeacherFCLayerMixin,
                 if only_fc_unfreezed_flag:
                     # unfreeze all layers
                     self.unfreeze_model()
+                    only_fc_unfreezed_flag = False
                 optimizer = self.all_optimizer
 
             # show current learning rate
@@ -191,6 +192,28 @@ class LWFTransferLearningTrainer(BaseTrainer, ReshapeTeacherFCLayerMixin,
 
         logger.info("finished training")
         logger.info(f"best accuracy on test set: {best_acc}")
+
+    def _save_checkpoint(self, current_epoch, best_acc):
+        model_weights = self.model.state_dict()
+
+        torch.save({
+            "model_weights": model_weights,
+            "fc_optimizer": self.fc_optimizer.state_dict(),
+            "all_optimizer": self.all_optimizer.state_dict(),
+            "current_epoch": current_epoch,
+            "best_acc": best_acc
+        }, f"{self._checkpoint_path}")
+
+    def _load_from_checkpoint(self, checkpoint_path: str) -> None:
+        checkpoint = torch.load(checkpoint_path)
+        self.model.load_state_dict(checkpoint.get("model_weights"))
+        self.fc_optimizer.load_state_dict(checkpoint.get("fc_optimizer"))
+        self.all_optimizer.load_state_dict(checkpoint.get("all_optimizer"))
+        start_epoch = checkpoint.get("current_epoch") + 1
+        best_acc = checkpoint.get("best_acc")
+
+        self.start_epoch = start_epoch
+        self.best_acc = best_acc
 
 
 class DatasetWithRobustFeatureRepresentations(Dataset):
