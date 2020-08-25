@@ -42,6 +42,7 @@ _WEIGHT_DECAY = 0.0002
 _TRAIN_EPOCHS = 52
 _WARM_START_EPOCHS = 26
 _LEARNING_RATE = 0.001
+_MOMENTUM = 0.9
 
 
 class LWFTransferLearningTrainer(ReshapeTeacherFCLayerMixin, ResetBlockMixin,
@@ -125,15 +126,15 @@ class LWFTransferLearningTrainer(ReshapeTeacherFCLayerMixin, ResetBlockMixin,
         self.fc_optimizer = optim.SGD(
             self.model.fc.parameters(),
             lr=self._lr,
-            momentum=settings.momentum,
-            weight_decay=settings.weight_decay
+            momentum=_MOMENTUM,
+            weight_decay=_WEIGHT_DECAY
         )
 
         self.all_optimizer = optim.SGD(
             self.model.parameters(),
             lr=self._lr,
-            momentum=settings.momentum,
-            weight_decay=settings.weight_decay
+            momentum=_MOMENTUM,
+            weight_decay=_WEIGHT_DECAY
         )
 
     def train(self, save_path):
@@ -248,7 +249,7 @@ class LWFTransferLearningTrainer(ReshapeTeacherFCLayerMixin, ResetBlockMixin,
     def _init_hyperparameters(self):
         self._lr = _LEARNING_RATE
         self._batch_size = settings.batch_size
-        self._train_epochs = _TRAIN_EPOCHS,
+        self._train_epochs = _TRAIN_EPOCHS
         self._warm_start_epochs = _WARM_START_EPOCHS
         self._device = torch.device(settings.device if torch.cuda.is_available() else "cpu")
 
@@ -273,7 +274,8 @@ class LWFTransferLearningTrainer(ReshapeTeacherFCLayerMixin, ResetBlockMixin,
             "train_epochs": str(self._train_epochs),
             "warm_start_epochs": str(self._warm_start_epochs),
             "batch_size": str(self._batch_size),
-            "optimizer": str([str(self.fc_optimizer), str(self.all_optimizer)]),
+            "fc_optimizer": str(self.fc_optimizer),
+            "all_optimizer": str(self.all_optimizer),
             "criterion": str(self.criterion),
             "lambda": str(self._lambda)
         }
