@@ -12,12 +12,8 @@ training steps:
         - in warm-start step only train fully connect(last) layer
         - after warm-start step, train whole model
 
-questions:
-    1. `weight decay`: 论文代码中采用 0.0002, 我们一直用的是 0.0005
-    2. `epoch`: 论文代码训练了 20000 个 steps, 相当于 51.15 个 epochs, 我们在之前的训练中一直采用 100 个 epochs
-    3. `learning rate`: 论文代码采用 0.001 从头至尾, 我们之前的训练中使用初始 lr = 0.1, learning rate decay = 0.2,
-                        momentum = [40, 70, 90], 并且我们在第一个 epoch 使用了 warm-up
-    4. `warm-start`: 论文代码前 10000 个 steps 只训练 fully connect layer, 之后训练整个模型，我们应该如何设置
+Notations:
+    1. We use the same hyperparameters as `https://github.com/ashafahi/RobustTransferLWF`
 """
 
 
@@ -29,17 +25,27 @@ from torch.utils.tensorboard import SummaryWriter
 
 from typing import Tuple
 import time
+import os
+import json
 
 from src.networks import SupportedModuleType
+from src.utils import evaluate_accuracy
 from .mixins import ReshapeTeacherFCLayerMixin
 from ..mixins import InitializeTensorboardMixin
 from ..retrain_trainer import ResetBlockMixin, FreezeModelMixin, WRN34Block
-from ..base_trainer import BaseTrainer
 from src.utils import logger
 
 
-class LWFTransferLearningTrainer(BaseTrainer, ReshapeTeacherFCLayerMixin,
-                                 ResetBlockMixin, FreezeModelMixin, InitializeTensorboardMixin):
+# hyperparameters
+_WEIGHT_DECAY = 0.0002
+# approximately equals 20000 steps
+_TRAIN_EPOCHS = 52
+_WARM_START_EPOCHS = 26
+_LEARNING_RATE = 0.001
+
+
+class LWFTransferLearningTrainer(ReshapeTeacherFCLayerMixin, ResetBlockMixin,
+                                 FreezeModelMixin, InitializeTensorboardMixin):
 
     def __init__(self, _lambda: float, teacher_model_path: str,
                  model: SupportedModuleType, train_loader: DataLoader,
@@ -49,23 +55,42 @@ class LWFTransferLearningTrainer(BaseTrainer, ReshapeTeacherFCLayerMixin,
         Args:
             _lambda: feature representation similarity penalty
         """
-        super().__init__(model, train_loader, test_loader, checkpoint_path)
+        logger.info("initialize trainer")
+        # can not change the order
+        self._init_hyperparameters()
+        self._init_model(model)
 
+        # load state_dict from robust teacher model
+        # this process must above `_init_dataloader` method
         teacher_state_dict = torch.load(teacher_model_path, map_location=self._device)
         self.reshape_teacher_fc_layer(teacher_state_dict)
         logger.info(f"load from teacher model: \n {teacher_model_path}")
         self.model.load_state_dict(teacher_state_dict)
+
+        self._init_dataloader(train_loader, test_loader)
+        self._init_optimizer()
+        self._init_criterion()
+
+        if checkpoint_path:
+            self._checkpoint_path = checkpoint_path
+            if os.path.exists(checkpoint_path):
+                self._load_from_checkpoint(checkpoint_path)
+            else:
+                self.start_epoch = 1
+                # best accuracy of current model
+                self.best_acc = 0
+
         # reset fc layer
         self.reset_last_k_blocks(1)
 
-        dataset_with_rft = DatasetWithRobustFeatureRepresentations(train_loader, self.model, self._device)
-        self._train_loader = DataLoader(dataset_with_rft, batch_size=train_loader.batch_size,
-                                        num_workers=train_loader.num_workers, shuffle=True)
         self._lambda = _lambda
 
         self.summary_writer = self.init_writer()
 
-    def step_batch(self, inputs: Tuple[Tensor, Tensor], labels: torch.Tensor, optimizer: optim.optimizer) -> Tuple[float, float]:
+        logger.info("initialize finished")
+        self.print_parameters()
+
+    def step_batch(self, inputs: Tuple[Tensor, Tensor], labels: torch.Tensor, optimizer) -> Tuple[float, float]:
         inputs, robust_feature_representations = inputs[0].to(self._device), inputs[1].to(self._device)
         labels = labels.to(self._device)
 
@@ -74,8 +99,10 @@ class LWFTransferLearningTrainer(BaseTrainer, ReshapeTeacherFCLayerMixin,
         outputs = self.model(inputs)
         running_feature_representations = self.model.get_feature_representations()
 
-        loss = self.criterion(outputs, labels) + self._lambda * \
+        feature_representations_distance = self._lambda * \
                torch.mean(torch.norm(robust_feature_representations - running_feature_representations, p=1, dim=1))
+
+        loss = self.criterion(outputs, labels) + feature_representations_distance
 
         loss.backward()
         optimizer.step()
@@ -89,25 +116,21 @@ class LWFTransferLearningTrainer(BaseTrainer, ReshapeTeacherFCLayerMixin,
     def _init_optimizer(self) -> None:
         """override `_init_optimizer` of super class
 
-        we provide two optimizer, `fc_optimizer` and `all_optimizer`
+        we provide two optimizers, `fc_optimizer` and `all_optimizer`
             - `fc_optimizer`: only train fc layer, use for warm-start
             - `all_optimizer`: train all layers
         """
 
         self.fc_optimizer = optim.SGD(
             self.model.fc.parameters(),
-            # fixme
-            # lr 如何设置
-            lr=NotImplemented,
+            lr=self._lr,
             momentum=settings.momentum,
             weight_decay=settings.weight_decay
         )
 
         self.all_optimizer = optim.SGD(
             self.model.parameters(),
-            # fixme
-            # lr 如何设置
-            lr=NotImplemented,
+            lr=self._lr,
             momentum=settings.momentum,
             weight_decay=settings.weight_decay
         )
@@ -123,18 +146,13 @@ class LWFTransferLearningTrainer(BaseTrainer, ReshapeTeacherFCLayerMixin,
         start_epoch = self.start_epoch
 
         logger.info(f"starting epoch: {start_epoch}")
-        logger.info(f"start lr: {self.current_lr}")
+        logger.info(f"lr: {self._lr}")
         logger.info(f"best accuracy: {best_acc}")
 
         for ep in range(start_epoch, self._train_epochs + 1):
-            # fixme
-            # 是否需要调节
-            self._adjust_lr(ep)
 
-            # fixme
-            # warm_start_epochs 取多少
             only_fc_unfreezed_flag = False
-            if ep < warm_start_epochs:
+            if ep < self._warm_start_epochs:
                 if not only_fc_unfreezed_flag:
                     # freeze all layers except fc layer
                     self.freeze_model()
@@ -149,7 +167,7 @@ class LWFTransferLearningTrainer(BaseTrainer, ReshapeTeacherFCLayerMixin,
                 optimizer = self.all_optimizer
 
             # show current learning rate
-            logger.debug(f"lr: {self.current_lr}")
+            logger.debug(f"lr: {self._lr}")
 
             training_acc, running_loss = 0, .0
             start_time = time.perf_counter()
@@ -159,10 +177,6 @@ class LWFTransferLearningTrainer(BaseTrainer, ReshapeTeacherFCLayerMixin,
 
                 training_acc += batch_training_acc
                 running_loss += batch_running_loss
-
-                # warm up learning rate
-                if ep <= self._warm_up_epochs:
-                    self.warm_up_scheduler.step()
 
                 if index % batch_number == batch_number - 1:
                     end_time = time.perf_counter()
@@ -193,6 +207,9 @@ class LWFTransferLearningTrainer(BaseTrainer, ReshapeTeacherFCLayerMixin,
         logger.info("finished training")
         logger.info(f"best accuracy on test set: {best_acc}")
 
+    def test(self):
+        return evaluate_accuracy(self.model, self._test_loader, self._device)
+
     def _save_checkpoint(self, current_epoch, best_acc):
         model_weights = self.model.state_dict()
 
@@ -204,6 +221,18 @@ class LWFTransferLearningTrainer(BaseTrainer, ReshapeTeacherFCLayerMixin,
             "best_acc": best_acc
         }, f"{self._checkpoint_path}")
 
+    def _save_best_model(self, save_path, current_epochs, accuracy):
+        """save best model with current info"""
+        info = {
+            "current_epochs": current_epochs,
+            "total_epochs": self._train_epochs,
+            "best_accuracy": accuracy
+        }
+        suffix = save_path.split("/")[-1]
+        with open(os.path.join(os.path.dirname(save_path), f"{suffix}_info.json"), "w", encoding="utf8") as f:
+            json.dump(info, f)
+        torch.save(self.model.state_dict(), f"{save_path}-best")
+
     def _load_from_checkpoint(self, checkpoint_path: str) -> None:
         checkpoint = torch.load(checkpoint_path)
         self.model.load_state_dict(checkpoint.get("model_weights"))
@@ -214,6 +243,42 @@ class LWFTransferLearningTrainer(BaseTrainer, ReshapeTeacherFCLayerMixin,
 
         self.start_epoch = start_epoch
         self.best_acc = best_acc
+
+    def _init_hyperparameters(self):
+        self._lr = _LEARNING_RATE
+        self._batch_size = settings.batch_size
+        self._train_epochs = _TRAIN_EPOCHS,
+        self._warm_start_epochs = _WARM_START_EPOCHS
+        self._device = torch.device(settings.device if torch.cuda.is_available() else "cpu")
+
+    def _init_criterion(self):
+        self.criterion = getattr(torch.nn, settings.criterion)()
+
+    def _init_model(self, model):
+        model.to(self._device)
+        self.model = model
+
+    def _init_dataloader(self, train_loader: DataLoader, test_loader: DataLoader):
+        # precalculate robustness feature representations
+        dataset_with_rft = DatasetWithRobustFeatureRepresentations(train_loader, self.model, self._device)
+        self._train_loader = DataLoader(dataset_with_rft, batch_size=settings.batch_size,
+                                        num_workers=settings.num_worker, shuffle=True)
+        self._test_loader = test_loader
+
+    def print_parameters(self):
+        params = {
+            "network": type(self.model).__name__,
+            "device": str(self._device),
+            "train_epochs": str(self._train_epochs),
+            "warm_start_epochs": str(self._warm_start_epochs),
+            "batch_size": str(self._batch_size),
+            "optimizer": str([str(self.fc_optimizer), str(self.all_optimizer)]),
+            "criterion": str(self.criterion),
+            "lambda": str(self._lambda)
+        }
+        params_str = "\n".join([": ".join(item) for item in params.items()])
+
+        logger.info(f"training hyperparameters: \n{params_str}")
 
 
 class DatasetWithRobustFeatureRepresentations(Dataset):
@@ -268,34 +333,23 @@ class DatasetWithRobustFeatureRepresentations(Dataset):
 
 if __name__ == '__main__':
     from src.networks import wrn34_10
-    from src.utils import get_cifar_test_dataloader, get_cifar_train_dataloader, logger
+    from src.utils import get_cifar_test_dataloader, get_cifar_train_dataloader
     from src import settings
 
-    logger.change_log_file(settings.log_dir / "tmp.log")
+    _lambda = 0.005
+
+    logger.change_log_file(settings.log_dir / f"lwf_tl_pgd7_lambda{_lambda}.log")
 
     model = wrn34_10(num_classes=10)
     teacher_model_path = "/home/aiandiot/usb/qiufeng/TransformRobust/trained_models/cifar100_pgd7_train-best"
-    teacher_state_dict = torch.load(teacher_model_path, map_location=settings.device)
-    teacher_state_dict["fc.weight"] = torch.rand_like(model.fc.weight)
-    teacher_state_dict["fc.bias"] = torch.rand_like(model.fc.bias)
-    model.load_state_dict(teacher_state_dict)
-    model.to(settings.device)
+    save_path = f"lwf_tl_pgd7_lambda{_lambda}"
+    trainer = LWFTransferLearningTrainer(
+        _lambda=_lambda,
+        teacher_model_path=teacher_model_path,
+        model=model,
+        train_loader=get_cifar_train_dataloader("cifar10"),
+        test_loader=get_cifar_test_dataloader("cifar10"),
+        checkpoint_path = settings.root_dir / "checkpoint" / f"{save_path}.pth"
+    )
 
-    # origin_loader = get_cifar_test_dataloader("cifar10")
-    origin_loader = get_cifar_train_dataloader("cifar10")
-
-    test_dataset = DatasetWithRobustFeatureRepresentations(origin_loader, model)
-    test_loader = DataLoader(test_dataset, batch_size=origin_loader.batch_size, num_workers=origin_loader.num_workers,
-                             shuffle=True)
-
-    print(len(test_loader))
-    print(len(origin_loader))
-
-    model.eval()
-    for (inputs, feature_representations), _ in test_loader:
-        inputs = inputs.to(settings.device)
-        feature_representations = feature_representations.to(settings.device)
-        model(inputs)
-        running_feature_representations = model.get_feature_representations()
-        print(torch.mean(torch.norm(feature_representations - running_feature_representations, p=1, dim=1)))
-
+    trainer.train(settings.root_dir / "trained_models" / save_path)

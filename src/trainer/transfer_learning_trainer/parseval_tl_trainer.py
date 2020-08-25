@@ -3,15 +3,13 @@ from torch.utils.data import DataLoader
 
 from typing import Tuple
 
-from ..mixins import InitializeTensorboardMixin
 from ..parseval_trainer import ParsevalConstrainMixin
 from .tl_trainer import TransferLearningTrainer
 from src.networks import SupportedModuleType
 from src.utils import logger
 
 
-class ParsevalTransferLearningTrainer(TransferLearningTrainer, ParsevalConstrainMixin,
-                                      InitializeTensorboardMixin):
+class ParsevalTransferLearningTrainer(TransferLearningTrainer, ParsevalConstrainMixin,):
 
     def __init__(self, beta: float, k: int, teacher_model_path: str,
                  model: SupportedModuleType, train_loader: DataLoader,
@@ -29,8 +27,6 @@ class ParsevalTransferLearningTrainer(TransferLearningTrainer, ParsevalConstrain
         self.gather_constrain_layers(k, ignore_first_conv=True)
         logger.debug(f"beta: {beta}")
         self._beta = beta
-
-        self.summary_writer = self.init_writer()
 
     def step_batch(self, inputs: torch.Tensor, labels: torch.Tensor) -> Tuple[float, float]:
         inputs, labels = inputs.to(self._device), labels.to(self._device)
