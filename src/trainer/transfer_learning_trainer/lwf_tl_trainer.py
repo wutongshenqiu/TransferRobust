@@ -80,6 +80,7 @@ class LWFTransferLearningTrainer(ReshapeTeacherFCLayerMixin, ResetBlockMixin,
                 # best accuracy of current model
                 self.best_acc = 0
 
+        self._blocks = WRN34Block(self.model)
         # reset fc layer
         self.reset_last_k_blocks(1)
 
