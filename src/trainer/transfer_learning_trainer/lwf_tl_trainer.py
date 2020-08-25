@@ -150,9 +150,9 @@ class LWFTransferLearningTrainer(ReshapeTeacherFCLayerMixin, ResetBlockMixin,
         logger.info(f"lr: {self._lr}")
         logger.info(f"best accuracy: {best_acc}")
 
+        only_fc_unfreezed_flag = False
         for ep in range(start_epoch, self._train_epochs + 1):
 
-            only_fc_unfreezed_flag = False
             if ep < self._warm_start_epochs:
                 if not only_fc_unfreezed_flag:
                     # freeze all layers except fc layer
