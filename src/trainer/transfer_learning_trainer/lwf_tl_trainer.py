@@ -350,7 +350,7 @@ if __name__ == '__main__':
         model=model,
         train_loader=get_cifar_train_dataloader("cifar10"),
         test_loader=get_cifar_test_dataloader("cifar10"),
-        checkpoint_path = settings.root_dir / "checkpoint" / f"{save_path}.pth"
+        checkpoint_path=str(settings.root_dir / "checkpoint" / f"{save_path}.pth")
     )
 
-    trainer.train(settings.root_dir / "trained_models" / save_path)
+    trainer.train(str(settings.root_dir / "trained_models" / save_path))
