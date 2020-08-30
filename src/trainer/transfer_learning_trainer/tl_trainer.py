@@ -4,8 +4,9 @@ from torch.utils.data import DataLoader
 from .mixins import ReshapeTeacherFCLayerMixin
 from ..mixins import InitializeTensorboardMixin
 from ..normal_trainer import NormalTrainer
-from ..retrain_trainer import ResetBlockMixin, FreezeModelMixin, WRN34Block
-from src.networks import SupportedModuleType
+from ..retrain_trainer import ResetBlockMixin, FreezeModelMixin
+from networks import WRN34Block
+from src.networks import SupportedWideResnetType
 from src.utils import logger
 
 
@@ -13,7 +14,7 @@ class TransferLearningTrainer(NormalTrainer, ResetBlockMixin, FreezeModelMixin,
                               ReshapeTeacherFCLayerMixin, InitializeTensorboardMixin):
 
     def __init__(self, k: int, teacher_model_path: str,
-                 model: SupportedModuleType, train_loader: DataLoader,
+                 model: SupportedWideResnetType, train_loader: DataLoader,
                  test_loader: DataLoader, checkpoint_path: str = None):
         """we obey following ideas in `transform learning trainer`
 

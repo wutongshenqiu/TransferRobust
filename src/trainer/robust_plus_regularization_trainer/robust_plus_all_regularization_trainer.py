@@ -4,14 +4,14 @@ import torch
 from torch.utils.data import DataLoader
 
 from ..adv_trainer import ADVTrainer
-from ..retrain_trainer import WRN34Block
+from networks import WRN34Block
 from ..mixins import InitializeTensorboardMixin
 from src.utils import logger
-from src.networks import SupportedModuleType
+from src.networks import SupportedWideResnetType
 
 
 class RobustPlusAllRegularizationTrainer(ADVTrainer, InitializeTensorboardMixin):
-    def __init__(self, _lambda: float, model: SupportedModuleType, train_loader: DataLoader,
+    def __init__(self, _lambda: float, model: SupportedWideResnetType, train_loader: DataLoader,
                  test_loader: DataLoader, attacker, params: Dict, checkpoint_path: str = None):
         super().__init__(model, train_loader, test_loader,
                          attacker, params, checkpoint_path)

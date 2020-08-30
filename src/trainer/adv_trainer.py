@@ -4,11 +4,11 @@ import torch
 from torch.utils.data import DataLoader
 
 from .base_trainer import BaseTrainer
-from src.networks import SupportedModuleType
+from src.networks import SupportedWideResnetType
 
 
 class BaseADVTrainer(BaseTrainer):
-    def __init__(self, model: SupportedModuleType, train_loader: DataLoader,
+    def __init__(self, model: SupportedWideResnetType, train_loader: DataLoader,
                  test_loader: DataLoader, attacker, params: Dict,
                  checkpoint_path: str = None):
         super().__init__(model, train_loader, test_loader, checkpoint_path)
@@ -19,7 +19,7 @@ class BaseADVTrainer(BaseTrainer):
 
 
 class ADVTrainer(BaseADVTrainer):
-    def __init__(self, model: SupportedModuleType, train_loader: DataLoader,
+    def __init__(self, model: SupportedWideResnetType, train_loader: DataLoader,
                  test_loader: DataLoader, attacker, params: Dict,
                  checkpoint_path: str = None):
         super().__init__(model, train_loader, test_loader, attacker, params, checkpoint_path)

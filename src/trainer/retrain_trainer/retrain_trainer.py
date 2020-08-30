@@ -2,13 +2,13 @@ from torch.utils.data import DataLoader
 
 from src.trainer import NormalTrainer
 from .mixins import ResetBlockMixin, FreezeModelMixin
-from .utils import WRN34Block
-from src.networks import SupportedModuleType
+from networks import WRN34Block
+from src.networks import SupportedWideResnetType
 
 
 class RetrainTrainer(NormalTrainer, ResetBlockMixin, FreezeModelMixin):
 
-    def __init__(self, k: int, model: SupportedModuleType, train_loader: DataLoader,
+    def __init__(self, k: int, model: SupportedWideResnetType, train_loader: DataLoader,
                  test_loader: DataLoader, checkpoint_path: str = None):
         """initialize retrain trainer
 
