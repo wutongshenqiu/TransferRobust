@@ -27,15 +27,14 @@ class WRN34Block:
 
 
 class Resnet18Block:
-    """divided resnet into 10 blocks
+    """divided resnet into 9 blocks
 
     Blocks:
-        block1: conv1
-        block2-3: residual block of conv2_x
-        block4-5: residual block of conv3_x
-        block6-7: residual block of conv4_x
-        block8-9: residual block of conv5_x
-        block10: fully connect layer
+        block1-2: residual block of conv2_x
+        block3-4: residual block of conv3_x
+        block5-6: residual block of conv4_x
+        block7-8: residual block of conv5_x
+        block9: fully connect layer
     """
 
     def __init__(self, model: SupportedResnetType):
@@ -43,17 +42,17 @@ class Resnet18Block:
         self._set_blocks()
 
     def get_block(self, num: int):
-        if num == 1:
-            return self.model.conv1
-        elif 2 <= num <= 9:
-            conv_num, residual_num = divmod(num+2, 2)
+        if 1 <= num <= 8:
+            conv_num, residual_num = divmod(num+3, 2)
             conv_block = getattr(self.model, f"conv{conv_num}_x")
             return conv_block[residual_num]
-        elif num == 10:
+        elif num == 9:
             return torch.nn.Sequential(self.model.fc)
+        else:
+            raise ValueError(f"unexpected block number: {num}")
 
     def _set_blocks(self):
-        for i in range(1, 11):
+        for i in range(1, 10):
             setattr(self, f"block{i}", self.get_block(i))
 
 
@@ -62,5 +61,5 @@ if __name__ == '__main__':
 
     model = resnet18(num_classes=10)
     blocks = Resnet18Block(model)
-    for block in range(1, 11):
+    for block in range(1, 10):
         print(getattr(blocks, f"block{block}"))

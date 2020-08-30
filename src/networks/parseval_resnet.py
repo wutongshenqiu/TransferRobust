@@ -10,7 +10,7 @@
 
 import torch
 import torch.nn as nn
-from .resnet import BasicBlock, BottleNeck
+from .resnet import BasicBlock
 
 
 class ParsevalBasicBlock(nn.Module):
@@ -45,44 +45,18 @@ class ParsevalBasicBlock(nn.Module):
         return nn.ReLU(inplace=True)(out)
 
 
-class ParsevalBottleNeck(nn.Module):
-    expansion = 4
-
-    def __init__(self, in_channels, out_channels, stride=1):
-        super().__init__()
-        self.residual_function = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, kernel_size=1, bias=False),
-            nn.BatchNorm2d(out_channels),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(out_channels, out_channels, stride=stride, kernel_size=3, padding=1, bias=False),
-            nn.BatchNorm2d(out_channels),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(out_channels, out_channels * BottleNeck.expansion, kernel_size=1, bias=False),
-            nn.BatchNorm2d(out_channels * BottleNeck.expansion),
-        )
-
-        self.shortcut = nn.Sequential()
-
-        if stride != 1 or in_channels != out_channels * BottleNeck.expansion:
-            self.shortcut = nn.Sequential(
-                nn.Conv2d(in_channels, out_channels * BottleNeck.expansion, stride=stride, kernel_size=1, bias=False),
-                nn.BatchNorm2d(out_channels * BottleNeck.expansion)
-            )
-
-    def forward(self, x):
-        out = 0.5 * (self.residual_function(x) + self.shortcut(x))
-        return nn.ReLU(inplace=True)(out)
-
-
 class ParsevalResNet(nn.Module):
+    # record current blocks
+    current_block: int = 0
 
-    def __init__(self, k, int, block, num_block, num_classes=100):
+    def __init__(self, k: int, num_block, num_classes=100):
         """
         Args:
             k: the last k blocks which will be retrained
         """
         super().__init__()
 
+        self._k = k
         self.in_channels = 64
 
         self.conv1 = nn.Sequential(
@@ -91,14 +65,16 @@ class ParsevalResNet(nn.Module):
             nn.ReLU(inplace=True))
         #we use a different inputsize than the original paper
         #so conv2_x's stride is 1
-        self.conv2_x = self._make_layer(block, 64, num_block[0], 1)
-        self.conv3_x = self._make_layer(block, 128, num_block[1], 2)
-        self.conv4_x = self._make_layer(block, 256, num_block[2], 2)
-        self.conv5_x = self._make_layer(block, 512, num_block[3], 2)
-        self.avg_pool = nn.AdaptiveAvgPool2d((1, 1))
-        self.fc = nn.Linear(512 * block.expansion, num_classes)
+        self.conv2_x = self._make_layer(64, num_block[0], 1)
+        self.conv3_x = self._make_layer(128, num_block[1], 2)
+        self.conv4_x = self._make_layer(256, num_block[2], 2)
+        self.conv5_x = self._make_layer(512, num_block[3], 2)
 
-    def _make_layer(self, block, out_channels, num_blocks, stride):
+        type(self).reset_current_block()
+        self.avg_pool = nn.AdaptiveAvgPool2d((1, 1))
+        self.fc = nn.Linear(512 * 1, num_classes)
+
+    def _make_layer(self, out_channels, num_blocks, stride):
         """make resnet layers(by layer i didnt mean this 'layer' was the
         same as a neuron netowork layer, ex. conv layer), one layer may
         contain more than one residual block
@@ -118,6 +94,13 @@ class ParsevalResNet(nn.Module):
         strides = [stride] + [1] * (num_blocks - 1)
         layers = []
         for stride in strides:
+            type(self).current_block += 1
+            # use ParsevalBasicBlock for residual block that needs retraining
+            # 9 is the total block of resnet18
+            if type(self).current_block + self._k > 9:
+                block = ParsevalBasicBlock
+            else:
+                block = BasicBlock
             layers.append(block(self.in_channels, out_channels, stride))
             self.in_channels = out_channels * block.expansion
 
@@ -135,12 +118,14 @@ class ParsevalResNet(nn.Module):
 
         return output
 
+    @classmethod
+    def reset_current_block(cls):
+        cls.current_block = 0
+
 
 def parseval_resnet18(k: int, num_classes: int = 100):
     """
     Args:
         k: the last k blocks which will be retrained
     """
-    return ParsevalResNet(k, BasicBlock, [2, 2, 2, 2], num_classes=num_classes)
-
-
+    return ParsevalResNet(k, [2, 2, 2, 2], num_classes=num_classes)
