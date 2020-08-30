@@ -13,8 +13,8 @@ import matplotlib.pyplot as plt
 import json
 
 from src import settings
-from .logging_utils import logger
-
+from ..logging_utils import logger
+from .dataset_utils import SubsetDataset
 
 DATA_DIR = "~/dataset"
 
@@ -41,18 +41,35 @@ def get_mean_and_std(dataset: str = settings.dataset_name) -> Tuple[Tuple, Tuple
         mean = CIFAR100_TRAIN_MEAN
         std = CIFAR100_TRAIN_STD
     elif dataset == "cifar10":
-        logger.debug(f"get mean and std of cifar10")
-        mean = CIFAR10_TRAIN_MEAN
-        std = CIFAR10_TRAIN_STD
+        # logger.debug(f"get mean and std of cifar10")
+        logger.warning("Using mean and std of cifar100 for dataset cifar10!")
+        mean = CIFAR100_TRAIN_MEAN
+        std = CIFAR100_TRAIN_STD
     else:
         raise ValueError(f'dataset "{dataset}" is not supported!')
-    
+
     return mean, std
+
+
+def get_subset_cifar_train_dataloader(partition_ratio: float, dataset=settings.dataset_name,
+                                      batch_size=settings.batch_size, num_workers=settings.num_worker,
+                                      shuffle=True, normalize=True):
+    logger.info("load whole loader")
+    whole_cifar_dataloader = get_cifar_train_dataloader(
+        dataset=dataset,
+        batch_size=batch_size,
+        num_workers=num_workers,
+        # false to keep same
+        shuffle=False,
+        normalize=normalize
+    )
+    subset_dataset = SubsetDataset(whole_cifar_dataloader, partition_ratio)
+
+    return DataLoader(subset_dataset, shuffle=shuffle, num_workers=num_workers, batch_size=batch_size)
 
 
 def get_cifar_train_dataloader(dataset=settings.dataset_name, batch_size=settings.batch_size,
                                num_workers=settings.num_worker, shuffle=True, normalize=True):
-
     if dataset == "cifar100":
         _data = torchvision.datasets.CIFAR100
         logger.info("load cifar100 train dataset")
@@ -84,8 +101,7 @@ def get_cifar_train_dataloader(dataset=settings.dataset_name, batch_size=setting
 
 
 def get_cifar_test_dataloader(dataset=settings.dataset_name, batch_size=settings.batch_size,
-                               num_workers=settings.num_worker, shuffle=False, normalize=True):
-
+                              num_workers=settings.num_worker, shuffle=False, normalize=True):
     if dataset == "cifar100":
         _data = torchvision.datasets.CIFAR100
         logger.info("load cifar100 test dataset")
@@ -96,7 +112,7 @@ def get_cifar_test_dataloader(dataset=settings.dataset_name, batch_size=settings
         raise ValueError(f'dataset "{dataset}" is not supported!')
 
     mean, std = get_mean_and_std(dataset=dataset)
-    
+
     compose_list = [
         transforms.ToTensor(),
     ]

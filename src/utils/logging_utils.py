@@ -54,6 +54,18 @@ class MyLogger:
         """
         self._logger.debug(msg, *args, **kwargs)
 
+    @_Decorators.check_logger_initialized
+    def warning(self, msg, *args, **kwargs):
+        """
+        Log 'msg % args' with severity 'WARNING'.
+
+        To pass exception information, use the keyword argument exc_info with
+        a true value, e.g.
+
+        logger.warning("Houston, we have a %s", "bit of a problem", exc_info=1)
+        """
+        self._logger.warning(msg, *args, **kwargs)
+
     def set_log_file(self, filename: Union[str, PurePath]):
         self._config_dict["handlers"]["file"]["filename"] = filename
 

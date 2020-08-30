@@ -295,7 +295,7 @@ class DatasetWithRobustFeatureRepresentations(Dataset):
         """
         logger.info("precalculate robust feature representations")
 
-        self._batch_number = len(origin_train_loader.dataset)
+        self._dataset_len = len(origin_train_loader.dataset)
 
         inputs_tensor_list = []
         feature_representations_tensor_list = []
@@ -332,7 +332,8 @@ class DatasetWithRobustFeatureRepresentations(Dataset):
         return (inputs, feature_representations), labels
 
     def __len__(self):
-        return self._batch_number
+        return self._dataset_len
+
 
 if __name__ == '__main__':
     from src.networks import wrn34_10

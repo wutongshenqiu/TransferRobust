@@ -93,22 +93,22 @@ if __name__ == '__main__':
 
 
     # robust plus regularization
-    for _lambda in [0.01, 0.05, 0.1, 1, 2]:
-        for k in [8, 13]:
-            model = wrn34_10(num_classes=100)
-            save_path = f"cifar100_robust_plus_regularization_blocks{k}_lambda{_lambda}"
-            log_file = f"{settings.log_dir}/{save_path}.log"
-            logger.change_log_file(log_file)
-            trainer = RobustPlusSingularRegularizationTrainer(
-                k=k,
-                _lambda=_lambda,
-                model=model,
-                train_loader=get_cifar_train_dataloader("cifar100"),
-                test_loader=get_cifar_test_dataloader("cifar100"),
-                attacker=LinfPGDAttack,
-                params=attack_params.get("LinfPGDAttack"),
-                checkpoint_path=f"./checkpoint/{save_path}.pth",
-            )
+    # for _lambda in [0.01, 0.05, 0.1, 1, 2]:
+    #     for k in [8, 13]:
+    #         model = wrn34_10(num_classes=100)
+    #         save_path = f"cifar100_robust_plus_regularization_blocks{k}_lambda{_lambda}"
+    #         log_file = f"{settings.log_dir}/{save_path}.log"
+    #         logger.change_log_file(log_file)
+    #         trainer = RobustPlusSingularRegularizationTrainer(
+    #             k=k,
+    #             _lambda=_lambda,
+    #             model=model,
+    #             train_loader=get_cifar_train_dataloader("cifar100"),
+    #             test_loader=get_cifar_test_dataloader("cifar100"),
+    #             attacker=LinfPGDAttack,
+    #             params=attack_params.get("LinfPGDAttack"),
+    #             checkpoint_path=f"./checkpoint/{save_path}.pth",
+    #         )
 
     # parseval normal train
     # from src.networks import parseval_normal_wrn34_10
