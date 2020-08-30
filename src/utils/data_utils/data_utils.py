@@ -64,7 +64,7 @@ def get_subset_cifar_train_dataloader(partition_ratio: float, dataset=settings.d
         normalize=normalize
     )
     subset_dataset = SubsetDataset(whole_cifar_dataloader, partition_ratio)
-
+    logger.info(f"subset size: {len(subset_dataset)}")
     return DataLoader(subset_dataset, shuffle=shuffle, num_workers=num_workers, batch_size=batch_size)
 
 
