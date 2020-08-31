@@ -1,6 +1,6 @@
 import torch
 
-from .networks import wrn34_10, parseval_retrain_wrn34_10
+from .networks import wrn34_10, parseval_retrain_wrn34_10, resnet18, parseval_resnet18
 
 from .trainer import (ADVTrainer, RetrainTrainer, TransferLearningTrainer,
                       ParsevalTransferLearningTrainer, RobustPlusSingularRegularizationTrainer,
@@ -35,29 +35,30 @@ if __name__ == '__main__':
 
 
     # parseval tranform learning
-    _lambda = 0.1
-    map_beta = {1e-3: "1e-3", 6e-4: "6e-4", 3e-4: "3e-4"}
-    for beta in [1e-3]:
-        for k in [8]:
-            for ratio in [0.5, 0.2, 0.1]:
-                teacher_model_path = f"cifar100_robust_plus_regularization_blocks{k}_lambda{_lambda}"
-                save_path = f"normalization_cifar100_parseval_tl_{teacher_model_path}_beta{map_beta[beta]}_ratio{ratio}"
-                # save_path = f"parseval_tl_cifar100_robust_plus_regularization_blocks1-17(retrain{k})_lambda{_lambda}_beta{map_beta[beta]}"
-                logger.change_log_file(f"{settings.log_dir}/{save_path}.log")
-                model = parseval_retrain_wrn34_10(k=k, num_classes=10)
-                trainer = ParsevalTransferLearningTrainer(
-                    beta=beta,
-                    k=k,
-                    # teacher_model_path=f"./trained_models/cifar100_robust_plus_regularization_blocks{k}_lambda1-best",
-                    teacher_model_path=f"./trained_models/{teacher_model_path}-best",
-                    model=model,
-                    train_loader=get_subset_cifar_train_dataloader(partition_ratio=ratio, dataset="cifar10"),
-                    test_loader=get_cifar_test_dataloader("cifar10"),
-                    checkpoint_path=f"./checkpoint/{save_path}.pth"
-                )
-                trainer.train(f"./trained_models/{save_path}")
+    # _lambda = 0.1
+    # map_beta = {1e-3: "1e-3", 6e-4: "6e-4", 3e-4: "3e-4"}
+    # for beta in [1e-3]:
+    #     for k in [8]:
+    #         for ratio in [0.5, 0.2, 0.1]:
+    #             teacher_model_path = f"cifar100_robust_plus_regularization_blocks{k}_lambda{_lambda}"
+    #             save_path = f"normalization_cifar100_parseval_tl_{teacher_model_path}_beta{map_beta[beta]}_ratio{ratio}"
+    #             # save_path = f"parseval_tl_cifar100_robust_plus_regularization_blocks1-17(retrain{k})_lambda{_lambda}_beta{map_beta[beta]}"
+    #             logger.change_log_file(f"{settings.log_dir}/{save_path}.log")
+    #             model = parseval_retrain_wrn34_10(k=k, num_classes=10)
+    #             trainer = ParsevalTransferLearningTrainer(
+    #                 beta=beta,
+    #                 k=k,
+    #                 # teacher_model_path=f"./trained_models/cifar100_robust_plus_regularization_blocks{k}_lambda1-best",
+    #                 teacher_model_path=f"./trained_models/{teacher_model_path}-best",
+    #                 model=model,
+    #                 train_loader=get_subset_cifar_train_dataloader(partition_ratio=ratio, dataset="cifar10"),
+    #                 test_loader=get_cifar_test_dataloader("cifar10"),
+    #                 checkpoint_path=f"./checkpoint/{save_path}.pth"
+    #             )
+    #             trainer.train(f"./trained_models/{save_path}")
 
-    #
+    # pgd7 train
+    # model = resnet18(num_classes=100)
     # trainer = ADVTrainer(
     #     # !!! 这里不能使用 normalize，因为 attack 的实现里面没有考虑 normalize
     #     # 那ART训练又是为什么呢？
@@ -68,6 +69,7 @@ if __name__ == '__main__':
     #     params=attack_params.get("LinfPGDAttack"),
     #     checkpoint_path="./checkpoint/cifar100_pgd7_train.pth"
     # )
+    # trainer.train()
 
     # normal retrain
     # model.load_state_dict(torch.load("./trained_models/cifar10_robust_plus_regularization_k6_1-best", map_location=settings.device))
