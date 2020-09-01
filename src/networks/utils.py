@@ -1,5 +1,12 @@
+from typing import Union
+
 import torch
-from src.networks import SupportedWideResnetType, SupportedResnetType
+
+from .resnet import ResNet
+from .parseval_resnet import ParsevalResNet
+from .wrn import WideResNet
+from .parseval_wrn import ParsevalWideResNet
+from src.networks import SupportedWideResnetType, SupportedResnetType, SupportedAllModuleType
 
 
 class WRN34Block:
@@ -9,6 +16,8 @@ class WRN34Block:
     def __init__(self, model: SupportedWideResnetType):
         self.model = model
         self._set_block()
+
+        self._total_blocks = 17
 
     def get_block(self, num: int):
         if 1 <= num <= 15:
@@ -20,6 +29,9 @@ class WRN34Block:
             return torch.nn.Sequential(self.model.fc)
         else:
             raise ValueError(f"unexpected block number: {num}")
+
+    def get_total_blocks(self) -> int:
+        return self._total_blocks
 
     def _set_block(self):
         for i in range(1, 18):
@@ -41,6 +53,8 @@ class Resnet18Block:
         self.model = model
         self._set_blocks()
 
+        self._total_blocks = 9
+
     def get_block(self, num: int):
         if 1 <= num <= 8:
             conv_num, residual_num = divmod(num+3, 2)
@@ -51,15 +65,29 @@ class Resnet18Block:
         else:
             raise ValueError(f"unexpected block number: {num}")
 
+    def get_total_blocks(self) -> int:
+        return self._total_blocks
+
     def _set_blocks(self):
         for i in range(1, 10):
             setattr(self, f"block{i}", self.get_block(i))
 
 
+def make_blocks(model: SupportedAllModuleType) -> Union[WRN34Block, Resnet18Block]:
+    if isinstance(model, WideResNet) or isinstance(model, ParsevalWideResNet):
+        return WRN34Block(model)
+    elif isinstance(model, ResNet) or isinstance(model, ParsevalResNet):
+        return Resnet18Block(model)
+    else:
+        raise ValueError(f"model {type(model).__name__} is not supported to divide into blocks")
+
+
 if __name__ == '__main__':
     from .resnet import resnet18
+    from .parseval_resnet import parseval_resnet18
+    from .wrn import wrn34_10
+    from .parseval_wrn import parseval_retrain_wrn34_10
 
     model = resnet18(num_classes=10)
-    blocks = Resnet18Block(model)
-    for block in range(1, 10):
-        print(getattr(blocks, f"block{block}"))
+    blocks = make_blocks(model)
+    print(blocks.block9)

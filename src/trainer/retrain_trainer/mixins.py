@@ -1,13 +1,13 @@
-from torch import nn
+from typing import Union
 
 from src.utils import logger
-from src.networks import WRN34Block
-from src.networks import SupportedWideResnetType
+from src.networks import WRN34Block, Resnet18Block
+from src.networks import SupportedAllModuleType
 
 
 class ResetBlockMixin:
-    model: SupportedWideResnetType
-    _blocks: WRN34Block
+    model: SupportedAllModuleType
+    _blocks: Union[WRN34Block, Resnet18Block]
 
     def reset_and_unfreeze_last_k_blocks(self, k: int):
         """reset and unfreeze layers in last k blocks
@@ -15,7 +15,9 @@ class ResetBlockMixin:
         Args:
             k: the last k blocks which will be retrained
         """
-        for i in range(17, 17-k, -1):
+        total_blocks = self._blocks.get_total_blocks()
+        logger.debug(f"model: {type(self.model).__name__}, blocks: {total_blocks}")
+        for i in range(total_blocks, total_blocks-k, -1):
             block = getattr(self._blocks, f"block{i}")
             for layer in block:
                 if hasattr(layer, "reset_parameters"):
@@ -35,7 +37,9 @@ class ResetBlockMixin:
         Args:
             k: the last k blocks which will be retrained
         """
-        for i in range(17, 17-k, -1):
+        total_blocks = self._blocks.get_total_blocks()
+        logger.debug(f"model: {type(self.model).__name__}, blocks: {total_blocks}")
+        for i in range(total_blocks, total_blocks-k, -1):
             block = getattr(self._blocks, f"block{i}")
             for layer in block:
                 if hasattr(layer, "reset_parameters"):
@@ -49,7 +53,9 @@ class ResetBlockMixin:
         Args:
             k: the last k blocks which will be retrained
         """
-        for i in range(17, 17-k, -1):
+        total_blocks = self._blocks.get_total_blocks()
+        logger.debug(f"model: {type(self.model).__name__}, blocks: {total_blocks}")
+        for i in range(total_blocks, total_blocks-k, -1):
             block = getattr(self._blocks, f"block{i}")
             for p in block.parameters():
                 p.requires_grad = True

@@ -24,38 +24,20 @@ if __name__ == '__main__':
     # time.sleep(3000)
 
     # tranform learning
-    model = wrn34_10(num_classes=10)
-    for k in range(15, 18):
-        # teacher_model_path = f"./trained_models/cifar100_robust_plus_regularization_blocks{k}_lambda1-best"
-        teacher_model_path = f"./trained_models/cifar100_pgd7_train-best"
-        save_path = f"normalization_cifar100_tl_pgd7_blocks{k}"
+    model = resnet18(num_classes=10)
+    for k in range(1, 18):
+        teacher_model_path = f"./trained_models/svhn_pgd7_train-best"
+        save_path = f"normalization_svhn_tl_svhn_pgd7_train_blocks{k}"
         logger.change_log_file(settings.log_dir / f"{save_path}.log")
         trainer = TransferLearningTrainer(
             k=k,
             teacher_model_path=teacher_model_path,
             model=model,
-            train_loader=get_cifar_train_dataloader("cifar10"),
-            test_loader=get_cifar_test_dataloader("cifar10"),
-            # checkpoint_path="./checkpoint/tl_pgd7_block6.pth"
+            train_loader=get_cifar_train_dataloader("mnist"),
+            test_loader=get_cifar_test_dataloader("mnist"),
             checkpoint_path=f"./checkpoint/{save_path}.pth"
         )
         trainer.train(f"./trained_models/{save_path}")
-
-    # model = wrn34_10(num_classes=10)
-    # for k in range(6, 7):
-    #     teacher_model_path = f"./trained_models/cifar100_robust_plus_regularization_blocks{k}_lambda1-best"
-    #     save_path = f"normalization_cifar100_tl_cifar100_robust_plus_regularization_blocks{k}_lambda1"
-    #     logger.change_log_file(settings.log_dir / f"{save_path}.log")
-    #     trainer = TransferLearningTrainer(
-    #         k=k,
-    #         teacher_model_path=teacher_model_path,
-    #         model=model,
-    #         train_loader=get_cifar_train_dataloader("cifar10"),
-    #         test_loader=get_cifar_test_dataloader("cifar10"),
-    #         # checkpoint_path="./checkpoint/tl_pgd7_block6.pth"
-    #         checkpoint_path=f"./checkpoint/{save_path}.pth"
-    #     )
-    #     trainer.train(f"./trained_models/{save_path}")
 
 
     # parseval tranform learning
