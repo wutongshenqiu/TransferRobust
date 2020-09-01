@@ -1,13 +1,10 @@
 """get subset of pytorch dataset"""
 
-from torchvision import datasets
-from torchvision import transforms
 from torch.utils.data import Dataset, DataLoader
 import torch
 from torch import Tensor
 
-from typing import Tuple, Union, Dict, Any
-import os
+from typing import Tuple, Dict, Any
 import math
 
 
@@ -94,30 +91,3 @@ class SubsetDataset(Dataset):
         if abs(number-math.ceil(number)) > threshold:
             return False
         return True
-
-
-if __name__ == '__main__':
-    # train_dataset = datasets.CIFAR10(root=os.path.join(DATA_DIR, "CIFAR"),
-    #                                  train=True, download=True, transform=transforms.Compose([transforms.ToTensor()]))
-    #
-    # train_loader = DataLoader(train_dataset, shuffle=False, num_workers=0, batch_size=32)
-    # print(len(train_dataset))
-    # print(len(train_loader))
-    #
-    # train_subset_dataset = SubsetDataset(train_loader, 0.5)
-    #
-    # train_dataset = datasets.CIFAR10(root=os.path.join(DATA_DIR, "CIFAR"),
-    #                                  train=True, download=True, transform=transforms.Compose([transforms.ToTensor()]))
-    #
-    # # train_loader = DataLoader(train_dataset, shuffle=False, num_workers=0, batch_size=32)
-    # #
-    # # train_subset_dataset2 = SubsetDataset(train_loader, 0.2)
-    # #
-    # # for i in range(10000):
-    # #     assert train_subset_dataset._labels[i] == train_subset_dataset2._labels[i]
-    # train_subset_loader = DataLoader(train_subset_dataset, shuffle=True, num_workers=0, batch_size=32)
-    # print(len(train_subset_dataset))
-    #
-    # print(calculate_categories_size(train_loader))
-    # print(calculate_categories_size(train_subset_loader))
-    pass

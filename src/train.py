@@ -9,7 +9,10 @@ from .trainer import (ADVTrainer, RetrainTrainer, TransferLearningTrainer,
 
 from . import settings
 from .utils import (get_cifar_test_dataloader, get_cifar_train_dataloader, logger,
-                    get_subset_cifar_train_dataloader)
+                    get_subset_cifar_train_dataloader, get_svhn_train_dataloder,
+                    get_mnist_test_dataloader, get_mnist_train_dataloader,
+                    get_svhn_test_dataloader)
+
 from .attack import LinfPGDAttack, attack_params
 
 # if the batch_size and model structure is fixed, this may accelerate the training process
@@ -58,18 +61,19 @@ if __name__ == '__main__':
     #             trainer.train(f"./trained_models/{save_path}")
 
     # pgd7 train
-    # model = resnet18(num_classes=100)
-    # trainer = ADVTrainer(
-    #     # !!! 这里不能使用 normalize，因为 attack 的实现里面没有考虑 normalize
-    #     # 那ART训练又是为什么呢？
-    #     model=wrn34_10(num_classes=100),
-    #     train_loader=get_cifar_train_dataloader("cifar100"),
-    #     test_loader=get_cifar_test_dataloader("cifar100"),
-    #     attacker=LinfPGDAttack,
-    #     params=attack_params.get("LinfPGDAttack"),
-    #     checkpoint_path="./checkpoint/cifar100_pgd7_train.pth"
-    # )
-    # trainer.train()
+    model = resnet18(num_classes=100)
+    logger.change_log_file(settings.log_dir / "svhn_pgd7_train.log")
+    trainer = ADVTrainer(
+        # !!! 这里不能使用 normalize，因为 attack 的实现里面没有考虑 normalize
+        # 那ART训练又是为什么呢？
+        model=model,
+        train_loader=get_cifar_train_dataloader("svhn"),
+        test_loader=get_cifar_test_dataloader("svhn"),
+        attacker=LinfPGDAttack,
+        params=attack_params.get("LinfPGDAttack"),
+        checkpoint_path="./checkpoint/svhn_pgd7_train.pth"
+    )
+    trainer.train("./trained_models/svhn_pgd7_train")
 
     # normal retrain
     # model.load_state_dict(torch.load("./trained_models/cifar10_robust_plus_regularization_k6_1-best", map_location=settings.device))

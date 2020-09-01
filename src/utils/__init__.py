@@ -3,6 +3,7 @@ from .data_utils import (
     get_cifar_test_dataloader,
     get_cifar_train_dataloader,
     get_subset_cifar_train_dataloader,
+    get_mnist_test_dataloader, get_mnist_train_dataloader, get_svhn_test_dataloader, get_svhn_train_dataloder,
     clamp,
     evaluate_accuracy,
     WarmUpLR
