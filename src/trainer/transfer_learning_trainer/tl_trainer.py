@@ -5,8 +5,8 @@ from .mixins import ReshapeTeacherFCLayerMixin
 from ..mixins import InitializeTensorboardMixin
 from ..normal_trainer import NormalTrainer
 from ..retrain_trainer import ResetBlockMixin, FreezeModelMixin
-from src.networks import WRN34Block
-from src.networks import SupportedWideResnetType
+from src.networks import make_blocks
+from src.networks import SupportedAllModuleType
 from src.utils import logger
 
 
@@ -14,7 +14,7 @@ class TransferLearningTrainer(NormalTrainer, ResetBlockMixin, FreezeModelMixin,
                               ReshapeTeacherFCLayerMixin, InitializeTensorboardMixin):
 
     def __init__(self, k: int, teacher_model_path: str,
-                 model: SupportedWideResnetType, train_loader: DataLoader,
+                 model: SupportedAllModuleType, train_loader: DataLoader,
                  test_loader: DataLoader, checkpoint_path: str = None):
         """we obey following ideas in `transform learning trainer`
 
@@ -32,7 +32,7 @@ class TransferLearningTrainer(NormalTrainer, ResetBlockMixin, FreezeModelMixin,
         logger.info(f"load from teacher model: \n {teacher_model_path}")
         self.model.load_state_dict(teacher_state_dict)
 
-        self._blocks = WRN34Block(model)
+        self._blocks = make_blocks(model)
 
         self.freeze_model()
         self.reset_and_unfreeze_last_k_blocks(k)

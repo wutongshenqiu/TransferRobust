@@ -4,11 +4,11 @@ import torch
 from torch.utils.data import DataLoader
 
 from .base_trainer import BaseTrainer
-from src.networks import SupportedWideResnetType
+from src.networks import SupportedAllModuleType
 
 
 class NormalTrainer(BaseTrainer):
-    def __init__(self, model: SupportedWideResnetType, train_loader: DataLoader,
+    def __init__(self, model: SupportedAllModuleType, train_loader: DataLoader,
                  test_loader: DataLoader, checkpoint_path: str = None):
         super().__init__(model, train_loader, test_loader, checkpoint_path)
 
