@@ -24,8 +24,25 @@ if __name__ == '__main__':
     # time.sleep(3000)
 
     # tranform learning
+    model = wrn34_10(num_classes=10)
+    for k in range(15, 18):
+        # teacher_model_path = f"./trained_models/cifar100_robust_plus_regularization_blocks{k}_lambda1-best"
+        teacher_model_path = f"./trained_models/cifar100_pgd7_train-best"
+        save_path = f"normalization_cifar100_tl_pgd7_blocks{k}"
+        logger.change_log_file(settings.log_dir / f"{save_path}.log")
+        trainer = TransferLearningTrainer(
+            k=k,
+            teacher_model_path=teacher_model_path,
+            model=model,
+            train_loader=get_cifar_train_dataloader("cifar10"),
+            test_loader=get_cifar_test_dataloader("cifar10"),
+            # checkpoint_path="./checkpoint/tl_pgd7_block6.pth"
+            checkpoint_path=f"./checkpoint/{save_path}.pth"
+        )
+        trainer.train(f"./trained_models/{save_path}")
+
     # model = wrn34_10(num_classes=10)
-    # for k in [4, 6, 8]:
+    # for k in range(6, 7):
     #     teacher_model_path = f"./trained_models/cifar100_robust_plus_regularization_blocks{k}_lambda1-best"
     #     save_path = f"normalization_cifar100_tl_cifar100_robust_plus_regularization_blocks{k}_lambda1"
     #     logger.change_log_file(settings.log_dir / f"{save_path}.log")
@@ -65,19 +82,19 @@ if __name__ == '__main__':
     #             trainer.train(f"./trained_models/{save_path}")
 
     # pgd7 train
-    model = resnet18(num_classes=100)
-    logger.change_log_file(settings.log_dir / "svhn_pgd7_train.log")
-    trainer = ADVTrainer(
-        # !!! 这里不能使用 normalize，因为 attack 的实现里面没有考虑 normalize
-        # 那ART训练又是为什么呢？
-        model=model,
-        train_loader=get_svhn_train_dataloder(),
-        test_loader=get_svhn_test_dataloader(),
-        attacker=LinfPGDAttack,
-        params=attack_params.get("LinfPGDAttack"),
-        checkpoint_path="./checkpoint/svhn_pgd7_train.pth"
-    )
-    trainer.train("./trained_models/svhn_pgd7_train")
+    # model = resnet18(num_classes=100)
+    # logger.change_log_file(settings.log_dir / "svhn_pgd7_train.log")
+    # trainer = ADVTrainer(
+    #     # !!! 这里不能使用 normalize，因为 attack 的实现里面没有考虑 normalize
+    #     # 那ART训练又是为什么呢？
+    #     model=model,
+    #     train_loader=get_svhn_train_dataloder(),
+    #     test_loader=get_svhn_test_dataloader(),
+    #     attacker=LinfPGDAttack,
+    #     params=attack_params.get("LinfPGDAttack"),
+    #     checkpoint_path="./checkpoint/svhn_pgd7_train.pth"
+    # )
+    # trainer.train("./trained_models/svhn_pgd7_train")
 
     # normal retrain
     # model.load_state_dict(torch.load("./trained_models/cifar10_robust_plus_regularization_k6_1-best", map_location=settings.device))
