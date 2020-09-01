@@ -1,19 +1,18 @@
 from typing import Tuple
 
 import torch
-from torch.nn.modules.module import Module
 from torch.utils.data import DataLoader
 
 from ..base_trainer import BaseTrainer
-from ..retrain_trainer import WRN34Block
+from src.networks import WRN34Block
 from src.utils import logger
 from .mixins import ParsevalConstrainMixin
-from src.networks import parseval_normal_wrn34_10, SupportedModuleType
+from src.networks import parseval_normal_wrn34_10, SupportedWideResnetType
 
 
 class ParsevalNormalTrainer(BaseTrainer, ParsevalConstrainMixin):
 
-    def __init__(self, beta: float, model: SupportedModuleType, train_loader: DataLoader,
+    def __init__(self, beta: float, model: SupportedWideResnetType, train_loader: DataLoader,
                  test_loader: DataLoader, checkpoint_path: str = None):
         """initialize retrain trainer
 

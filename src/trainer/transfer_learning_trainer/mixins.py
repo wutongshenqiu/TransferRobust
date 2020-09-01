@@ -4,13 +4,13 @@ from typing import Union
 from collections import OrderedDict
 
 from src.utils import logger
-from src.networks import SupportedModuleType
+from src.networks import SupportedWideResnetType
 
 
 class ReshapeTeacherFCLayerMixin:
     """reshape teacher's fully connect layer in state_dict"""
     _device: Union[str, torch.device]
-    model: SupportedModuleType
+    model: SupportedWideResnetType
 
     def reshape_teacher_fc_layer(self, state_dict: OrderedDict):
         logger.debug(f"teacher fully connect weight: {state_dict['fc.weight'].shape}\n{state_dict['fc.weight']}")

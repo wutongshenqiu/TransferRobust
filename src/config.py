@@ -51,7 +51,7 @@ class Settings(BaseSettings):
     def check_dataset_name(cls, v):
         if not v:
             raise ValueError("`dataset_name` must be specified")
-        if v not in {"cifar10", "cifar100"}:
+        if v not in {"cifar10", "cifar100", "svhn", "mnist"}:
             raise ValueError("`dataset_name` must be specified as `cifar10` or `cifar100`")
         return v
 

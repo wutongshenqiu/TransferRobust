@@ -1,6 +1,6 @@
 import torch
 
-from .networks import wrn34_10, parseval_retrain_wrn34_10
+from .networks import wrn34_10, parseval_retrain_wrn34_10, resnet18, parseval_resnet18
 
 from .trainer import (ADVTrainer, RetrainTrainer, TransferLearningTrainer,
                       ParsevalTransferLearningTrainer, RobustPlusSingularRegularizationTrainer,
@@ -9,7 +9,10 @@ from .trainer import (ADVTrainer, RetrainTrainer, TransferLearningTrainer,
 
 from . import settings
 from .utils import (get_cifar_test_dataloader, get_cifar_train_dataloader, logger,
-                    get_subset_cifar_train_dataloader)
+                    get_subset_cifar_train_dataloader, get_svhn_train_dataloder,
+                    get_mnist_test_dataloader, get_mnist_train_dataloader,
+                    get_svhn_test_dataloader)
+
 from .attack import LinfPGDAttack, attack_params
 
 # if the batch_size and model structure is fixed, this may accelerate the training process
@@ -21,58 +24,60 @@ if __name__ == '__main__':
     # time.sleep(3000)
 
     # tranform learning
-    model = wrn34_10(num_classes=10)
-    for k in [4, 6, 8]:
-        teacher_model_path = f"./trained_models/cifar100_robust_plus_regularization_blocks{k}_lambda1-best"
-        save_path = f"normalization_cifar100_tl_cifar100_robust_plus_regularization_blocks{k}_lambda1"
-        logger.change_log_file(settings.log_dir / f"{save_path}.log")
-        trainer = TransferLearningTrainer(
-            k=k,
-            teacher_model_path=teacher_model_path,
-            model=model,
-            train_loader=get_cifar_train_dataloader("cifar10"),
-            test_loader=get_cifar_test_dataloader("cifar10"),
-            # checkpoint_path="./checkpoint/tl_pgd7_block6.pth"
-            checkpoint_path=f"./checkpoint/{save_path}.pth"
-        )
-        trainer.train(f"./trained_models/{save_path}")
+    # model = wrn34_10(num_classes=10)
+    # for k in [4, 6, 8]:
+    #     teacher_model_path = f"./trained_models/cifar100_robust_plus_regularization_blocks{k}_lambda1-best"
+    #     save_path = f"normalization_cifar100_tl_cifar100_robust_plus_regularization_blocks{k}_lambda1"
+    #     logger.change_log_file(settings.log_dir / f"{save_path}.log")
+    #     trainer = TransferLearningTrainer(
+    #         k=k,
+    #         teacher_model_path=teacher_model_path,
+    #         model=model,
+    #         train_loader=get_cifar_train_dataloader("cifar10"),
+    #         test_loader=get_cifar_test_dataloader("cifar10"),
+    #         # checkpoint_path="./checkpoint/tl_pgd7_block6.pth"
+    #         checkpoint_path=f"./checkpoint/{save_path}.pth"
+    #     )
+    #     trainer.train(f"./trained_models/{save_path}")
 
 
     # parseval tranform learning
-    # _lambda = 1
-    # map_beta = {1e-3: "1e-3", 6e-4: "6e-4", 3e-4: "3e-4", 2e-3: "2e-3"}
-    # for beta in [1e-3, 6e-4, 3e-4, 2e-3]:
-    #     for k in [4, 6, 8]:
-    #         # teacher_model_path = f"cifar100_pgd7_train"
-    #         teacher_model_path = f"cifar100_robust_plus_regularization_blocks{k}_lambda{_lambda}"
-    #         # save_path = f"normalization_cifar100_parseval_tl_{teacher_model_path}(retrain{k})_beta{map_beta[beta]}"
-    #         save_path = f"normalization_cifar100_parseval_tl_{teacher_model_path}_beta{map_beta[beta]}"
-    #         # save_path = f"parseval_tl_cifar100_robust_plus_regularization_blocks1-17(retrain{k})_lambda{_lambda}_beta{map_beta[beta]}"
-    #         logger.change_log_file(f"{settings.log_dir}/{save_path}.log")
-    #         model = parseval_retrain_wrn34_10(k=k, num_classes=10)
-    #         trainer = ParsevalTransferLearningTrainer(
-    #             beta=beta,
-    #             k=k,
-    #             # teacher_model_path=f"./trained_models/cifar100_robust_plus_regularization_blocks{k}_lambda1-best",
-    #             teacher_model_path=f"./trained_models/{teacher_model_path}-best",
-    #             model=model,
-    #             train_loader=get_cifar_train_dataloader(dataset="cifar10"),
-    #             test_loader=get_cifar_test_dataloader("cifar10"),
-    #             checkpoint_path=f"./checkpoint/{save_path}.pth"
-    #         )
-    #         trainer.train(f"./trained_models/{save_path}")
+    # _lambda = 0.1
+    # map_beta = {1e-3: "1e-3", 6e-4: "6e-4", 3e-4: "3e-4"}
+    # for beta in [1e-3]:
+    #     for k in [8]:
+    #         for ratio in [0.5, 0.2, 0.1]:
+    #             teacher_model_path = f"cifar100_robust_plus_regularization_blocks{k}_lambda{_lambda}"
+    #             save_path = f"normalization_cifar100_parseval_tl_{teacher_model_path}_beta{map_beta[beta]}_ratio{ratio}"
+    #             # save_path = f"parseval_tl_cifar100_robust_plus_regularization_blocks1-17(retrain{k})_lambda{_lambda}_beta{map_beta[beta]}"
+    #             logger.change_log_file(f"{settings.log_dir}/{save_path}.log")
+    #             model = parseval_retrain_wrn34_10(k=k, num_classes=10)
+    #             trainer = ParsevalTransferLearningTrainer(
+    #                 beta=beta,
+    #                 k=k,
+    #                 # teacher_model_path=f"./trained_models/cifar100_robust_plus_regularization_blocks{k}_lambda1-best",
+    #                 teacher_model_path=f"./trained_models/{teacher_model_path}-best",
+    #                 model=model,
+    #                 train_loader=get_subset_cifar_train_dataloader(partition_ratio=ratio, dataset="cifar10"),
+    #                 test_loader=get_cifar_test_dataloader("cifar10"),
+    #                 checkpoint_path=f"./checkpoint/{save_path}.pth"
+    #             )
+    #             trainer.train(f"./trained_models/{save_path}")
 
-    #
-    # trainer = ADVTrainer(
-    #     # !!! 这里不能使用 normalize，因为 attack 的实现里面没有考虑 normalize
-    #     # 那ART训练又是为什么呢？
-    #     model=wrn34_10(num_classes=100),
-    #     train_loader=get_cifar_train_dataloader("cifar100"),
-    #     test_loader=get_cifar_test_dataloader("cifar100"),
-    #     attacker=LinfPGDAttack,
-    #     params=attack_params.get("LinfPGDAttack"),
-    #     checkpoint_path="./checkpoint/cifar100_pgd7_train.pth"
-    # )
+    # pgd7 train
+    model = resnet18(num_classes=100)
+    logger.change_log_file(settings.log_dir / "svhn_pgd7_train.log")
+    trainer = ADVTrainer(
+        # !!! 这里不能使用 normalize，因为 attack 的实现里面没有考虑 normalize
+        # 那ART训练又是为什么呢？
+        model=model,
+        train_loader=get_svhn_train_dataloder(),
+        test_loader=get_svhn_test_dataloader(),
+        attacker=LinfPGDAttack,
+        params=attack_params.get("LinfPGDAttack"),
+        checkpoint_path="./checkpoint/svhn_pgd7_train.pth"
+    )
+    trainer.train("./trained_models/svhn_pgd7_train")
 
     # normal retrain
     # model.load_state_dict(torch.load("./trained_models/cifar10_robust_plus_regularization_k6_1-best", map_location=settings.device))

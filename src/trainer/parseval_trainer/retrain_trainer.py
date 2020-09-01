@@ -16,12 +16,12 @@ from ..retrain_trainer import RetrainTrainer
 
 from src.utils import logger
 from .mixins import ParsevalConstrainMixin
-from src.networks import parseval_retrain_wrn34_10, SupportedModuleType
+from src.networks import parseval_retrain_wrn34_10, SupportedWideResnetType
 
 
 class ParsevalRetrainTrainer(RetrainTrainer, ParsevalConstrainMixin):
 
-    def __init__(self, beta: float, k: int, model: SupportedModuleType, train_loader: DataLoader,
+    def __init__(self, beta: float, k: int, model: SupportedWideResnetType, train_loader: DataLoader,
                  test_loader: DataLoader, checkpoint_path: str = None):
         """initialize retrain trainer
 

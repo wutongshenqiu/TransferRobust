@@ -1,12 +1,12 @@
 from torch import nn
 
 from src.utils import logger
-from .utils import WRN34Block
-from src.networks import SupportedModuleType
+from src.networks import WRN34Block
+from src.networks import SupportedWideResnetType
 
 
 class ResetBlockMixin:
-    model: SupportedModuleType
+    model: SupportedWideResnetType
     _blocks: WRN34Block
 
     def reset_and_unfreeze_last_k_blocks(self, k: int):
@@ -62,7 +62,7 @@ class ResetBlockMixin:
 
 class FreezeModelMixin:
     """freeze all parameters of model"""
-    model: SupportedModuleType
+    model: SupportedWideResnetType
 
     def freeze_model(self):
         for p in self.model.parameters():

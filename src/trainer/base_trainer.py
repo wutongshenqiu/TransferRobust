@@ -10,11 +10,11 @@ from torch.utils.tensorboard import SummaryWriter
 
 from src import settings
 from src.utils import WarmUpLR, evaluate_accuracy, logger
-from src.networks import SupportedModuleType
+from src.networks import SupportedAllModuleType
 
 
 class BaseTrainer:
-    def __init__(self, model: SupportedModuleType, train_loader: DataLoader,
+    def __init__(self, model: SupportedAllModuleType, train_loader: DataLoader,
                  test_loader: DataLoader, checkpoint_path: str = None):
         logger.info("initialize trainer")
         # can not change the order

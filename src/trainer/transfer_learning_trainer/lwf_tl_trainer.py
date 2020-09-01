@@ -28,11 +28,12 @@ import time
 import os
 import json
 
-from src.networks import SupportedModuleType
+from src.networks import SupportedWideResnetType
 from src.utils import evaluate_accuracy
 from .mixins import ReshapeTeacherFCLayerMixin
 from ..mixins import InitializeTensorboardMixin
-from ..retrain_trainer import ResetBlockMixin, FreezeModelMixin, WRN34Block
+from ..retrain_trainer import ResetBlockMixin, FreezeModelMixin
+from src.networks import WRN34Block
 from src.utils import logger
 
 
@@ -49,7 +50,7 @@ class LWFTransferLearningTrainer(ReshapeTeacherFCLayerMixin, ResetBlockMixin,
                                  FreezeModelMixin, InitializeTensorboardMixin):
 
     def __init__(self, _lambda: float, teacher_model_path: str,
-                 model: SupportedModuleType, train_loader: DataLoader,
+                 model: SupportedWideResnetType, train_loader: DataLoader,
                  test_loader: DataLoader, checkpoint_path: str = None):
         """`learning without forgetting` in transfer learning
 
@@ -286,7 +287,7 @@ class LWFTransferLearningTrainer(ReshapeTeacherFCLayerMixin, ResetBlockMixin,
 
 class DatasetWithRobustFeatureRepresentations(Dataset):
 
-    def __init__(self, origin_train_loader: DataLoader, model: SupportedModuleType, device: torch.device):
+    def __init__(self, origin_train_loader: DataLoader, model: SupportedWideResnetType, device: torch.device):
         """extend origin dataset with robust feature representations
 
         Args:

@@ -127,29 +127,21 @@ if __name__ == '__main__':
     }
     
     result = {}
-    # model = wrn34_10(num_classes=10)
-    for k in [8]:
-        if k == 4 or k == 6:
-            _lambda = 1
-        else:
-            _lambda = 0.1
-        log_path = f"normalization_cifar100_parseval_tl_cifar100_robust_plus_regularization_blocks{k}_lambda{_lambda}_beta1e-3_ratio_attack.log"
-        logger.change_log_file(settings.log_dir / log_path)
-        test_loader = get_cifar_test_dataloader("cifar10") 
+    model = wrn34_10(num_classes=10)
+    test_loader = get_cifar_test_dataloader("cifar10") 
+    logger.change_log_file(settings.log_dir / "normalization_cifar100_tl_cifar100_robust_plus_regularization_blocks(468)_lambda1_attack.log")
+    for k in [4, 6, 8]:
+        _lambda = 1
+        model_path = f"normalization_cifar100_tl_cifar100_robust_plus_regularization_blocks{k}_lambda1-best"
         
-        for ratio in [0.5, 0.2, 0.1]:
+        logger.debug(f"load from `{model_path}`")
+        model.load_state_dict(torch.load(model_path, map_location=settings.device))
+        model.to(settings.device)
+        start_time = time.perf_counter()
+        acc = test_attack(model, test_loader, LinfPGDAttack, params)
+        end_time = time.perf_counter()
 
-            model = parseval_retrain_wrn34_10(k=k, num_classes=10)
-            # model_path = f"./trained_models/parseval_tl_cifar100_pgd7_blocks{k}_lambda1_beta1e-3-best"
-            model_path = f"./trained_models/normalization_cifar100_parseval_tl_cifar100_robust_plus_regularization_blocks{k}_lambda{_lambda}_beta1e-3_ratio{ratio}-best"
-            logger.debug(f"load from `{model_path}`")
-            model.load_state_dict(torch.load(model_path, map_location=settings.device))
-            model.to(settings.device)
-            start_time = time.perf_counter()
-            acc = test_attack(model, test_loader, LinfPGDAttack, params)
-            end_time = time.perf_counter()
-
-            logger.info(f"costing time: {end_time-start_time:.2f} secs")
+        logger.info(f"costing time: {end_time-start_time:.2f} secs")
 
             # result[k] = acc
 

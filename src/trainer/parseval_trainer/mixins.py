@@ -5,13 +5,13 @@ from typing import Tuple, Union
 import math
 
 from src.utils import logger
-from ..retrain_trainer import WRN34Block
-from src.networks import ParsevalBasicBlock, SupportedModuleType
+from src.networks import WRN34Block
+from src.networks import ParsevalBasicBlock, SupportedWideResnetType
 
 
 class ParsevalConstrainMixin:
     """provide `gather_constrain_layers` and `sum_layers_constrain` method"""
-    model: SupportedModuleType
+    model: SupportedWideResnetType
     _device: Union[str, torch.device]
     _blocks: WRN34Block
 
