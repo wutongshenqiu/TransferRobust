@@ -131,18 +131,17 @@ if __name__ == '__main__':
     _lambda = 1
     map_beta = {1e-3: "1e-3", 2e-3: "2e-3", 3e-4: "3e-4", 6e-4: "6e-4"}
     
-    for k in [6, 8]:
-        logger.change_log_file(settings.log_dir / f"normalization_cifar100_parseval_tl_cifar100_robust_plus_regularization_blocks{k}_lambda1_attack.log")
-        test_loader = get_cifar_test_dataloader("cifar10") 
-        model = parseval_retrain_wrn34_10(k=k, num_classes=10)
-        for beta in [1e-3, 2e-3, 3e-4, 6e-4]:
-            model_path = f"./trained_models/normalization_cifar100_parseval_tl_cifar100_robust_plus_regularization_blocks{k}_lambda1_beta{map_beta[beta]}-best"
-            
-            logger.debug(f"load from `{model_path}`")
-            model.load_state_dict(torch.load(model_path, map_location=settings.device))
-            model.to(settings.device)
-            start_time = time.perf_counter()
-            acc = test_attack(model, test_loader, LinfPGDAttack, params)
-            end_time = time.perf_counter()
+    logger.change_log_file(settings.log_dir / f"normalization_cifar100_tl_pgd7_attack.log")
+    test_loader = get_cifar_test_dataloader("cifar10") 
+    model = wrn34_10(num_classes=10)
+    for k in range(1, 18):
+        model_path = f"./trained_models/normalization_cifar100_tl_pgd7_blocks{k}-best"
+        
+        logger.debug(f"load from `{model_path}`")
+        model.load_state_dict(torch.load(model_path, map_location=settings.device))
+        model.to(settings.device)
+        start_time = time.perf_counter()
+        acc = test_attack(model, test_loader, LinfPGDAttack, params)
+        end_time = time.perf_counter()
 
-            logger.info(f"costing time: {end_time-start_time:.2f} secs")
+        logger.info(f"costing time: {end_time-start_time:.2f} secs")

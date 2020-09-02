@@ -68,7 +68,7 @@ class ResetBlockMixin:
 
 class FreezeModelMixin:
     """freeze all parameters of model"""
-    model: SupportedWideResnetType
+    model: SupportedAllModuleType
 
     def freeze_model(self):
         for p in self.model.parameters():

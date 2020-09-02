@@ -25,7 +25,7 @@ if __name__ == '__main__':
 
     # tranform learning
     model = resnet18(num_classes=10)
-    for k in range(1, 18):
+    for k in range(1, 10):
         teacher_model_path = f"./trained_models/svhn_pgd7_train-best"
         save_path = f"normalization_svhn_tl_svhn_pgd7_train_blocks{k}"
         logger.change_log_file(settings.log_dir / f"{save_path}.log")
@@ -33,8 +33,8 @@ if __name__ == '__main__':
             k=k,
             teacher_model_path=teacher_model_path,
             model=model,
-            train_loader=get_cifar_train_dataloader("mnist"),
-            test_loader=get_cifar_test_dataloader("mnist"),
+            train_loader=get_mnist_train_dataloader(),
+            test_loader=get_mnist_test_dataloader(),
             checkpoint_path=f"./checkpoint/{save_path}.pth"
         )
         trainer.train(f"./trained_models/{save_path}")
