@@ -45,7 +45,7 @@ class ParsevalBasicBlock(nn.Module):
         return nn.ReLU(inplace=True)(out)
 
     def __iter__(self):
-        return self.residual_function
+        return iter(self.residual_function)
 
 
 

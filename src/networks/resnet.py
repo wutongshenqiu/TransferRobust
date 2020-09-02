@@ -50,7 +50,7 @@ class BasicBlock(nn.Module):
         return nn.ReLU(inplace=True)(self.residual_function(x) + self.shortcut(x))
 
     def __iter__(self):
-        return self.residual_function
+        return iter(self.residual_function)
 
 
 class BottleNeck(nn.Module):

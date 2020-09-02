@@ -89,9 +89,9 @@ if __name__ == '__main__':
     from .wrn import wrn34_10
     from .parseval_wrn import parseval_retrain_wrn34_10
 
-    # model = resnet18(num_classes=10)
-    model = wrn34_10(num_classes=10)
+    model = resnet18(num_classes=10)
+    # model = wrn34_10(num_classes=10)
     blocks = make_blocks(model)
-    for layer in blocks.block15:
+    for layer in blocks.block8:
         if hasattr(layer, "reset_parameters"):
             print(1)
