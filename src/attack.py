@@ -127,12 +127,15 @@ if __name__ == '__main__':
     }
     
     result = {}
-    model = wrn34_10(num_classes=10)
+    # model = wrn34_10(num_classes=10)
+    _lambda = 1
+    map_beta = {1e-3: "1e-3", 2e-3: "2e-3", 3e-4: "3e-4", 6e-4: "6e-4"}
+    
+    logger.change_log_file(settings.log_dir / f"normalization_cifar100_tl_pgd7_attack.log")
     test_loader = get_cifar_test_dataloader("cifar10") 
-    logger.change_log_file(settings.log_dir / "normalization_cifar100_tl_cifar100_robust_plus_regularization_blocks(468)_lambda1_attack.log")
-    for k in [4, 6, 8]:
-        _lambda = 1
-        model_path = f"normalization_cifar100_tl_cifar100_robust_plus_regularization_blocks{k}_lambda1-best"
+    model = wrn34_10(num_classes=10)
+    for k in range(1, 18):
+        model_path = f"./trained_models/normalization_cifar100_tl_pgd7_blocks{k}-best"
         
         logger.debug(f"load from `{model_path}`")
         model.load_state_dict(torch.load(model_path, map_location=settings.device))
@@ -142,10 +145,3 @@ if __name__ == '__main__':
         end_time = time.perf_counter()
 
         logger.info(f"costing time: {end_time-start_time:.2f} secs")
-
-            # result[k] = acc
-
-
-    # logger.info(f"robustness result: {result}")
-    # with open("./trained_models/tl_pgd7_robust.json", "w") as f:
-        # f.write(json.dumps(result))
