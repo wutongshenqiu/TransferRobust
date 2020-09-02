@@ -21,6 +21,7 @@ class ResetBlockMixin:
             block = getattr(self._blocks, f"block{i}")
             for layer in block:
                 if hasattr(layer, "reset_parameters"):
+                    logger.debug(f"reinitialize layer: {type(layer).__name__}")
                     layer.reset_parameters()
             for p in block.parameters():
                 p.requires_grad = True
@@ -43,6 +44,7 @@ class ResetBlockMixin:
             block = getattr(self._blocks, f"block{i}")
             for layer in block:
                 if hasattr(layer, "reset_parameters"):
+                    logger.debug(f"reinitialize layer: {type(layer).__name__}")
                     layer.reset_parameters()
 
         logger.debug(f"reset last {k} blocks")

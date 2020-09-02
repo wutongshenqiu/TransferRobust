@@ -48,7 +48,6 @@ class ParsevalBasicBlock(nn.Module):
         return iter(self.residual_function)
 
 
-
 class ParsevalResNet(nn.Module):
     # record current blocks
     current_block: int = 0

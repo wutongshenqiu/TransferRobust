@@ -9,11 +9,17 @@ from .utils import logger, get_mean_and_std, clamp, evaluate_accuracy
 
 
 attack_params = {
-    "LinfPGDAttack": {
+    "cifar100": {
         "random_init": 1,
         "epsilon": 8/255,
         "step_size": 2/255,
         "num_steps": 7,
+    },
+    "svhn": {
+        "random_init": 1,
+        "epsilon": 0.3,
+        "step_size": 0.01,
+        "num_steps": 40,
     }
 }
 
