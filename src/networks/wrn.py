@@ -29,6 +29,11 @@ class BasicBlock(nn.Module):
         out = self.conv2(out)
         return torch.add(x if self.equalInOut else self.convShortcut(x), out)
 
+    def __iter__(self):
+        return iter(
+            [self.bn1, self.relu1, self.conv1, self.bn2, self.relu2, self.conv2]
+        )
+
 class NetworkBlock(nn.Module):
     def __init__(self, nb_layers, in_planes, out_planes, block, stride, dropRate=0.0):
         super(NetworkBlock, self).__init__()

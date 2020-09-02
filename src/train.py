@@ -25,7 +25,7 @@ if __name__ == '__main__':
 
     # tranform learning
     model = resnet18(num_classes=10)
-    for k in range(1, 18):
+    for k in range(2, 10):
         teacher_model_path = f"./trained_models/svhn_pgd7_train-best"
         save_path = f"normalization_svhn_tl_svhn_pgd7_train_blocks{k}"
         logger.change_log_file(settings.log_dir / f"{save_path}.log")
@@ -33,8 +33,8 @@ if __name__ == '__main__':
             k=k,
             teacher_model_path=teacher_model_path,
             model=model,
-            train_loader=get_cifar_train_dataloader("mnist"),
-            test_loader=get_cifar_test_dataloader("mnist"),
+            train_loader=get_mnist_train_dataloader(),
+            test_loader=get_mnist_test_dataloader(),
             checkpoint_path=f"./checkpoint/{save_path}.pth"
         )
         trainer.train(f"./trained_models/{save_path}")
@@ -64,19 +64,19 @@ if __name__ == '__main__':
     #             trainer.train(f"./trained_models/{save_path}")
 
     # pgd7 train
-    model = resnet18(num_classes=100)
-    logger.change_log_file(settings.log_dir / "svhn_pgd7_train.log")
-    trainer = ADVTrainer(
-        # !!! 这里不能使用 normalize，因为 attack 的实现里面没有考虑 normalize
-        # 那ART训练又是为什么呢？
-        model=model,
-        train_loader=get_svhn_train_dataloder(),
-        test_loader=get_svhn_test_dataloader(),
-        attacker=LinfPGDAttack,
-        params=attack_params.get("LinfPGDAttack"),
-        checkpoint_path="./checkpoint/svhn_pgd7_train.pth"
-    )
-    trainer.train("./trained_models/svhn_pgd7_train")
+    # model = resnet18(num_classes=100)
+    # logger.change_log_file(settings.log_dir / "svhn_pgd7_train.log")
+    # trainer = ADVTrainer(
+    #     # !!! 这里不能使用 normalize，因为 attack 的实现里面没有考虑 normalize
+    #     # 那ART训练又是为什么呢？
+    #     model=model,
+    #     train_loader=get_svhn_train_dataloder(),
+    #     test_loader=get_svhn_test_dataloader(),
+    #     attacker=LinfPGDAttack,
+    #     params=attack_params.get("LinfPGDAttack"),
+    #     checkpoint_path="./checkpoint/svhn_pgd7_train.pth"
+    # )
+    # trainer.train("./trained_models/svhn_pgd7_train")
 
     # normal retrain
     # model.load_state_dict(torch.load("./trained_models/cifar10_robust_plus_regularization_k6_1-best", map_location=settings.device))

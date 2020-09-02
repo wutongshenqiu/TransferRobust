@@ -22,7 +22,7 @@ class WRN34Block:
     def get_block(self, num: int):
         if 1 <= num <= 15:
             block_num, layer_num = divmod(num+4, 5)
-            return torch.nn.Sequential(getattr(self.model, f"block{block_num}").layer[layer_num])
+            return getattr(self.model, f"block{block_num}").layer[layer_num]
         elif num == 16:
             return torch.nn.Sequential(self.model.bn1, self.model.relu)
         elif num == 17:
@@ -59,6 +59,7 @@ class Resnet18Block:
         if 1 <= num <= 8:
             conv_num, residual_num = divmod(num+3, 2)
             conv_block = getattr(self.model, f"conv{conv_num}_x")
+            # return torch.nn.Sequential(conv_block[residual_num])
             return conv_block[residual_num]
         elif num == 9:
             return torch.nn.Sequential(self.model.fc)
@@ -88,6 +89,9 @@ if __name__ == '__main__':
     from .wrn import wrn34_10
     from .parseval_wrn import parseval_retrain_wrn34_10
 
-    model = resnet18(num_classes=10)
+    # model = resnet18(num_classes=10)
+    model = wrn34_10(num_classes=10)
     blocks = make_blocks(model)
-    print(blocks.block9)
+    for layer in blocks.block15:
+        if hasattr(layer, "reset_parameters"):
+            print(1)

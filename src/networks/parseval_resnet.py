@@ -44,6 +44,10 @@ class ParsevalBasicBlock(nn.Module):
         out = 0.5 * (self.residual_function(x) + self.shortcut(x))
         return nn.ReLU(inplace=True)(out)
 
+    def __iter__(self):
+        return self.residual_function
+
+
 
 class ParsevalResNet(nn.Module):
     # record current blocks
