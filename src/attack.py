@@ -15,7 +15,7 @@ attack_params = {
         "step_size": 2/255,
         "num_steps": 7,
     },
-    "svhn": {
+    "mnist": {
         "random_init": 1,
         "epsilon": 0.3,
         "step_size": 0.01,

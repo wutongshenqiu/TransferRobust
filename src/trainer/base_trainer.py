@@ -95,6 +95,9 @@ class BaseTrainer:
         logger.info("finished training")
         logger.info(f"best accuracy on test set: {best_acc}")
 
+        # save last model
+        self._save_model(f"{save_path}-last")
+
     def step_batch(self, inputs: torch.Tensor, labels: torch.Tensor) -> Tuple[float, float]:
         raise NotImplementedError("must overwrite method `step_epoch`")
 
@@ -154,7 +157,10 @@ class BaseTrainer:
         suffix = save_path.split("/")[-1]
         with open(os.path.join(os.path.dirname(save_path), f"{suffix}_info.json"), "w", encoding="utf8") as f:
             json.dump(info, f)
-        torch.save(self.model.state_dict(), f"{save_path}-best")
+        self._save_model(f"{save_path}-best")
+
+    def _save_model(self, save_path: str):
+        torch.save(self.model.state_dict(), save_path)
 
     def _adjust_lr(self, ep):
         if ep > self._warm_up_epochs:

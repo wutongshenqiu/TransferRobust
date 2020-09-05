@@ -25,7 +25,7 @@ def calculate_categories_size(data_loader: DataLoader) -> Dict[int, int]:
 class SubsetDataset(Dataset):
 
     def __init__(self, whole_data_loader: DataLoader, partition_ratio: float):
-        """extend origin dataset with robust feature representations
+        """get subset of targeted dataset
 
         Args:
             whole_data_loader: original whole data loader,

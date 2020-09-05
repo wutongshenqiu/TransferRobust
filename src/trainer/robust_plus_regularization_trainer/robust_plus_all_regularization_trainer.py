@@ -4,18 +4,17 @@ import torch
 from torch.utils.data import DataLoader
 
 from ..adv_trainer import ADVTrainer
-from src.networks import WRN34Block
 from ..mixins import InitializeTensorboardMixin
 from src.utils import logger
-from src.networks import SupportedWideResnetType
+from src.networks import SupportedAllModuleType, make_blocks
 
 
 class RobustPlusAllRegularizationTrainer(ADVTrainer, InitializeTensorboardMixin):
-    def __init__(self, _lambda: float, model: SupportedWideResnetType, train_loader: DataLoader,
+    def __init__(self, _lambda: float, model: SupportedAllModuleType, train_loader: DataLoader,
                  test_loader: DataLoader, attacker, params: Dict, checkpoint_path: str = None):
         super().__init__(model, train_loader, test_loader,
                          attacker, params, checkpoint_path)
-        self._blocks = WRN34Block(model)
+        self._blocks = make_blocks(model)
         self._register_forward_hook_to_all_block()
         self._hooked_features_list = []
         self._lambda = _lambda
@@ -60,7 +59,9 @@ class RobustPlusAllRegularizationTrainer(ADVTrainer, InitializeTensorboardMixin)
         return sum_regularization
 
     def _register_forward_hook_to_all_block(self):
-        for k in range(1, 18):
+        total_blocks = self._blocks.get_total_blocks()
+        logger.debug(f"model total blocks: {total_blocks}")
+        for k in range(1, total_blocks+1):
             logger.debug(f"register hook to the last layer of {k}th block")
             block = getattr(self._blocks, f"block{k}")
             block.register_forward_hook(self._get_layer_outputs)
@@ -77,7 +78,7 @@ if __name__ == '__main__':
 
     model = wrn34_10(num_classes=100)
     save_path = f"123123"
-    trainer = RobustPlusRegularizationTrainer(
+    trainer = RobustPlusAllRegularizationTrainer(
         _lambda=0.05,
         model=model,
         train_loader=get_cifar_train_dataloader("cifar100"),

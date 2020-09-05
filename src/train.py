@@ -120,23 +120,30 @@ if __name__ == '__main__':
 
 
     # robust plus regularization
-    # for _lambda in [1]:
-    #     for k in [8]:
-    #         model = wrn34_10(num_classes=100)
-    #         save_path = f"cifar100_robust_plus_regularization_blocks{k}_lambda{_lambda}"
-    #         log_file = f"{settings.log_dir}/{save_path}.log"
-    #         logger.change_log_file(log_file)
-    #         trainer = RobustPlusSingularRegularizationTrainer(
-    #             k=k,
-    #             _lambda=_lambda,
-    #             model=model,
-    #             train_loader=get_cifar_train_dataloader("cifar100"),
-    #             test_loader=get_cifar_test_dataloader("cifar100"),
-    #             attacker=LinfPGDAttack,
-    #             params=attack_params.get("LinfPGDAttack"),
-    #             checkpoint_path=f"./checkpoint/{save_path}.pth",
-    #         )
-    #         trainer.train(f"trained_models/{save_path}")
+    params = {
+        "random_init": 1,
+        "epsilon": 8/255,
+        "step_size": 2/255,
+        "num_steps": 7,
+    }
+
+    for _lambda in [1]:
+        for k in [8]:
+            model = resnet18(num_classes=10)
+            save_path = f"svhn_robust_plus_regularization_blocks{k}_lambda{_lambda}"
+            log_file = f"{settings.log_dir}/{save_path}.log"
+            logger.change_log_file(log_file)
+            trainer = RobustPlusSingularRegularizationTrainer(
+                k=k,
+                _lambda=_lambda,
+                model=model,
+                train_loader=get_svhn_train_dataloder(),
+                test_loader=get_svhn_test_dataloader(),
+                attacker=LinfPGDAttack,
+                params=params,
+                checkpoint_path=f"./checkpoint/{save_path}.pth",
+            )
+            trainer.train(f"trained_models/{save_path}")
 
     # parseval normal train
     # from src.networks import parseval_normal_wrn34_10
@@ -154,21 +161,21 @@ if __name__ == '__main__':
     # trainer.train(f"./trained_models/cifar100_pgd7_train")
 
     # lwf transfer training
-    _lambda = 0.1
-
-    for partition_ratio in [0.5, 0.2, 0.1]:
-        save_path = f"normalization_cifar100_lwf_tl_pgd7_lambda{_lambda}_ratio{partition_ratio}"
-        logger.change_log_file(settings.log_dir / f"{save_path}.log")
-
-        model = wrn34_10(num_classes=10)
-        teacher_model_path = "./trained_models/cifar100_pgd7_train-best"
-        trainer = LWFTransferLearningTrainer(
-            _lambda=_lambda,
-            teacher_model_path=teacher_model_path,
-            model=model,
-            train_loader=get_subset_cifar_train_dataloader(partition_ratio=partition_ratio, dataset="cifar10"),
-            test_loader=get_cifar_test_dataloader("cifar10"),
-            checkpoint_path=str(settings.root_dir / "checkpoint" / f"{save_path}.pth")
-        )
-
-        trainer.train(f"trained_models/{save_path}")
+    # _lambda = 0.1
+    #
+    # for partition_ratio in [0.5, 0.2, 0.1]:
+    #     save_path = f"normalization_cifar100_lwf_tl_pgd7_lambda{_lambda}_ratio{partition_ratio}"
+    #     logger.change_log_file(settings.log_dir / f"{save_path}.log")
+    #
+    #     model = wrn34_10(num_classes=10)
+    #     teacher_model_path = "./trained_models/cifar100_pgd7_train-best"
+    #     trainer = LWFTransferLearningTrainer(
+    #         _lambda=_lambda,
+    #         teacher_model_path=teacher_model_path,
+    #         model=model,
+    #         train_loader=get_subset_cifar_train_dataloader(partition_ratio=partition_ratio, dataset="cifar10"),
+    #         test_loader=get_cifar_test_dataloader("cifar10"),
+    #         checkpoint_path=str(settings.root_dir / "checkpoint" / f"{save_path}.pth")
+    #     )
+    #
+    #     trainer.train(f"trained_models/{save_path}")
