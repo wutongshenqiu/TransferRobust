@@ -58,7 +58,7 @@ class RobustPlusSingularRegularizationTrainer(ADVTrainer, InitializeTensorboardM
         # assert 1 <= k <= 17
         logger.debug(f"register hook to the last layer of {k}th block from last")
         block = getattr(self._blocks, f"block{18 - k}")
-        block[-1].register_forward_hook(self.get_layer_outputs)
+        block.register_forward_hook(self.get_layer_outputs)
 
     def get_layer_outputs(self, layer, inputs, outputs):
         if self.model.training:

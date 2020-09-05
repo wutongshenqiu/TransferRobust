@@ -13,4 +13,6 @@ from .get_dataloader import (
     get_mnist_train_dataloader,
     get_svhn_test_dataloader,
     get_svhn_train_dataloder,
+    get_mnist_test_dataloader_one_channel,
+    get_mnist_train_dataloader_one_channel
 )

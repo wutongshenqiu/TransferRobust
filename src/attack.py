@@ -118,18 +118,19 @@ def test_attack(model: nn.Module, test_loader, attacker, params: Dict, device: s
 
 
 if __name__ == '__main__':
-    from src.networks import parseval_retrain_wrn34_10, wrn34_10
-    from .utils import get_cifar_test_dataloader, get_cifar_train_dataloader
+    from src.networks import parseval_retrain_wrn34_10, wrn34_10, resnet18
+    from .utils import (get_cifar_test_dataloader, get_cifar_train_dataloader, get_mnist_test_dataloader,
+                        get_mnist_test_dataloader_one_channel)
     import time
     import json
 
 
     params = {
         "random_init": 1,
-        "epsilon": 8/255,
-        "step_size": 2/255,
-        "num_steps": 20,
-        "dataset_name": "cifar100",
+        "epsilon": 0.3,
+        "step_size": 0.01,
+        "num_steps": 40,
+        "dataset_name": "mnist",
     }
     
     result = {}
@@ -137,12 +138,13 @@ if __name__ == '__main__':
     _lambda = 1
     map_beta = {1e-3: "1e-3", 2e-3: "2e-3", 3e-4: "3e-4", 6e-4: "6e-4"}
     
-    logger.change_log_file(settings.log_dir / f"normalization_cifar100_tl_pgd7_attack.log")
-    test_loader = get_cifar_test_dataloader("cifar10") 
-    model = wrn34_10(num_classes=10)
-    for k in range(1, 18):
-        model_path = f"./trained_models/normalization_cifar100_tl_pgd7_blocks{k}-best"
-        
+    logger.change_log_file(settings.log_dir / f"normalization_svhn_tl_normal_svhn_resnet18_eps0.3_attack.log")
+    test_loader = get_mnist_test_dataloader()
+    model = resnet18(num_classes=10)
+
+    for k in range(1, 10):
+        model_path = f"./trained_models/normalization_svhn_tl_normal_svhn_resnet18_blocks{k}-best"
+
         logger.debug(f"load from `{model_path}`")
         model.load_state_dict(torch.load(model_path, map_location=settings.device))
         model.to(settings.device)
@@ -151,3 +153,15 @@ if __name__ == '__main__':
         end_time = time.perf_counter()
 
         logger.info(f"costing time: {end_time-start_time:.2f} secs")
+
+    # for k in range(1, 18):
+    #     model_path = f"./trained_models/normalization_cifar100_tl_pgd7_blocks{k}-best"
+    #
+    #     logger.debug(f"load from `{model_path}`")
+    #     model.load_state_dict(torch.load(model_path, map_location=settings.device))
+    #     model.to(settings.device)
+    #     start_time = time.perf_counter()
+    #     acc = test_attack(model, test_loader, LinfPGDAttack, params)
+    #     end_time = time.perf_counter()
+    #
+    #     logger.info(f"costing time: {end_time-start_time:.2f} secs")

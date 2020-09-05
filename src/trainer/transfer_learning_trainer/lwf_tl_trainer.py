@@ -338,23 +338,25 @@ class DatasetWithRobustFeatureRepresentations(Dataset):
 
 if __name__ == '__main__':
     from src.networks import wrn34_10
-    from src.utils import get_cifar_test_dataloader, get_cifar_train_dataloader
+    from src.utils import (get_cifar_test_dataloader, get_cifar_train_dataloader,
+                           get_subset_cifar_train_dataloader)
     from src import settings
 
-    _lambda = 0.005
+    _lambda = 0.1
 
-    logger.change_log_file(settings.log_dir / f"lwf_tl_pgd7_lambda{_lambda}.log")
+    for partition_ratio in [0.5, 0.2, 0.1]:
+        save_path = f"normalization_cifar100_lwf_tl_pgd7_lambda{_lambda}_ratio{partition_ratio}"
+        logger.change_log_file(settings.log_dir / f"{save_path}.log")
 
-    model = wrn34_10(num_classes=10)
-    teacher_model_path = "/home/aiandiot/usb/qiufeng/TransformRobust/trained_models/cifar100_pgd7_train-best"
-    save_path = f"lwf_tl_pgd7_lambda{_lambda}"
-    trainer = LWFTransferLearningTrainer(
-        _lambda=_lambda,
-        teacher_model_path=teacher_model_path,
-        model=model,
-        train_loader=get_cifar_train_dataloader("cifar10"),
-        test_loader=get_cifar_test_dataloader("cifar10"),
-        checkpoint_path=str(settings.root_dir / "checkpoint" / f"{save_path}.pth")
-    )
+        model = wrn34_10(num_classes=10)
+        teacher_model_path = "/home/aiandiot/usb/qiufeng/TransformRobust/trained_models/cifar100_pgd7_train-best"
+        trainer = LWFTransferLearningTrainer(
+            _lambda=_lambda,
+            teacher_model_path=teacher_model_path,
+            model=model,
+            train_loader=get_subset_cifar_train_dataloader(partition_ratio=partition_ratio, dataset="cifar10"),
+            test_loader=get_cifar_test_dataloader("cifar10"),
+            checkpoint_path=str(settings.root_dir / "checkpoint" / f"{save_path}.pth")
+        )
 
-    trainer.train(str(settings.root_dir / "trained_models" / save_path))
+        trainer.train(str(settings.root_dir / "trained_models" / save_path))

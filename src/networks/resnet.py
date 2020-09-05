@@ -144,6 +144,3 @@ def resnet18(num_classes: int):
     """ return a ResNet 18 object
     """
     return ResNet(BasicBlock, [2, 2, 2, 2], num_classes=num_classes)
-
-
-

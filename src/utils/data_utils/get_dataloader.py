@@ -151,6 +151,7 @@ def get_mnist_train_dataloader(batch_size=settings.batch_size, num_workers=setti
 
 def get_mnist_test_dataloader(batch_size=settings.batch_size, num_workers=settings.num_worker,
                               shuffle=False, normalize=True):
+    """3*32*32 mnist tensor"""
     compose_list = [
         transforms.Resize(32),
         transforms.Grayscale(num_output_channels=3),
@@ -166,6 +167,41 @@ def get_mnist_test_dataloader(batch_size=settings.batch_size, num_workers=settin
     test_loader = DataLoader(test_data, shuffle=shuffle, num_workers=num_workers, batch_size=batch_size)
 
     return test_loader
+
+
+def get_mnist_test_dataloader_one_channel(batch_size=settings.batch_size, num_workers=settings.num_worker,
+                                          shuffle=False, normalize=True):
+    """1*28*28 mnist tensor"""
+    compose_list = [
+        transforms.ToTensor(),
+    ]
+    if normalize:
+        mean, std = (0.1307,), (0.3081,)
+        compose_list.append(transforms.Normalize(mean, std))
+    transform = transforms.Compose(compose_list)
+
+    test_data = torchvision.datasets.MNIST(root=os.path.join(DATA_DIR, "MNIST"), train=False,
+                                           download=True, transform=transform)
+    test_loader = DataLoader(test_data, shuffle=shuffle, num_workers=num_workers, batch_size=batch_size)
+
+    return test_loader
+
+
+def get_mnist_train_dataloader_one_channel(batch_size=settings.batch_size, num_workers=settings.num_worker,
+                                           shuffle=True, normalize=True):
+    compose_list = [
+        transforms.ToTensor(),
+    ]
+    if normalize:
+        mean, std = (0.1307,), (0.3081,)
+        compose_list.append(transforms.Normalize(mean, std))
+    transform = transforms.Compose(compose_list)
+
+    train_data = torchvision.datasets.MNIST(root=os.path.join(DATA_DIR, "MNIST"), train=True,
+                                            download=True, transform=transform)
+    train_loader = DataLoader(train_data, shuffle=shuffle, num_workers=num_workers, batch_size=batch_size)
+
+    return train_loader
 
 
 def get_svhn_train_dataloder(batch_size=settings.batch_size, num_workers=settings.num_worker,
