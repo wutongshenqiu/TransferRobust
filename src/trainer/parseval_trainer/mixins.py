@@ -6,12 +6,12 @@ import math
 
 from src.utils import logger
 from src.networks import WRN34Block
-from src.networks import SupportedWideResnetType, parseval_wrn, parseval_resnet
+from src.networks import SupportedAllModuleType
 
 
 class ParsevalConstrainMixin:
     """provide `gather_constrain_layers` and `sum_layers_constrain` method"""
-    model: SupportedWideResnetType
+    model: SupportedAllModuleType
     _device: Union[str, torch.device]
     _blocks: WRN34Block
 

@@ -10,7 +10,7 @@ class RetrainTrainer(NormalTrainer, ResetBlockMixin, FreezeModelMixin):
 
     def __init__(self, k: int, model: SupportedWideResnetType, train_loader: DataLoader,
                  test_loader: DataLoader, checkpoint_path: str = None):
-        """initialize retrain trainer
+        """initialize retrain test_trainer
 
         Args:
             k: the last k blocks which will be retrained
