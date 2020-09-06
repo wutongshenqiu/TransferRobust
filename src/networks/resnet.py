@@ -102,6 +102,9 @@ class ResNet(nn.Module):
         self.avg_pool = nn.AdaptiveAvgPool2d((1, 1))
         self.fc = nn.Linear(512 * block.expansion, num_classes)
 
+        # this attribute is for `learning without forgetting`
+        self._feature_representations = None
+
     def _make_layer(self, block, out_channels, num_blocks, stride):
         """make resnet layers(by layer i didnt mean this 'layer' was the
         same as a neuron netowork layer, ex. conv layer), one layer may
@@ -134,10 +137,18 @@ class ResNet(nn.Module):
         output = self.conv4_x(output)
         output = self.conv5_x(output)
         output = self.avg_pool(output)
+        # store feature representations
+        self._feature_representations = output
         output = output.view(output.size(0), -1)
         output = self.fc(output)
 
         return output
+
+    def get_feature_representations(self) -> torch.Tensor:
+        if self._feature_representations is not None:
+            return self._feature_representations
+        raise AttributeError("can not obtain `feature representations` without input!")
+
 
 
 def resnet18(num_classes: int):
