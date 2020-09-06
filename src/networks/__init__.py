@@ -2,7 +2,7 @@ from typing import Union
 
 from .wrn import wrn34_10, WideResNet
 from .lenet import LeNet
-from .parseval_wrn import (parseval_retrain_wrn34_10, ParsevalBasicBlock,
+from .parseval_wrn import (parseval_retrain_wrn34_10,
                            parseval_normal_wrn34_10, ParsevalWideResNet)
 
 from .resnet import ResNet, resnet18

@@ -1,6 +1,8 @@
 import torch
 from torch.utils.data import DataLoader
 
+import os
+
 from .mixins import ReshapeTeacherFCLayerMixin
 from ..mixins import InitializeTensorboardMixin
 from ..normal_trainer import NormalTrainer
@@ -27,15 +29,20 @@ class TransferLearningTrainer(NormalTrainer, ResetBlockMixin, FreezeModelMixin,
         """
         super().__init__(model, train_loader, test_loader, checkpoint_path)
 
-        teacher_state_dict = torch.load(teacher_model_path, map_location=self._device)
-        self.reshape_teacher_fc_layer(teacher_state_dict)
-        logger.info(f"load from teacher model: \n {teacher_model_path}")
-        self.model.load_state_dict(teacher_state_dict)
+        if not checkpoint_path or not os.path.exists(checkpoint_path):
+            teacher_state_dict = torch.load(teacher_model_path, map_location=self._device)
+            self.reshape_teacher_fc_layer(teacher_state_dict)
+            logger.info(f"load from teacher model: \n {teacher_model_path}")
+            self.model.load_state_dict(teacher_state_dict)
+        else:
+            logger.info("load from old checkpoint, no need for teacher model!")
 
         self._blocks = make_blocks(model)
 
         self.freeze_model()
-        self.reset_and_unfreeze_last_k_blocks(k)
+        # fixme
+        # if re-initialize influence?
+        self.unfreeze_last_k_blocks(k)
 
         self.summary_writer = self.init_writer()
 

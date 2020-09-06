@@ -6,7 +6,7 @@ import math
 
 from src.utils import logger
 from src.networks import WRN34Block
-from src.networks import ParsevalBasicBlock, SupportedWideResnetType
+from src.networks import SupportedWideResnetType, parseval_wrn, parseval_resnet
 
 
 class ParsevalConstrainMixin:
@@ -80,20 +80,20 @@ class ParsevalConstrainMixin:
             "conv": [],
             "fc": []
         }
-        logger.debug(f"model structure: \n{self.model}")
-        for i in range(17, 17-k, -1):
+        # logger.debug(f"model structure: \n{self.model}")
+        logger.debug(f"model name: {type(self.model).__name__}")
+        total_blocks = self._blocks.get_total_blocks()
+        logger.debug(f"total blocks: {total_blocks}")
+        for i in range(total_blocks, total_blocks-k, -1):
             block = getattr(self._blocks, f"block{i}")
             for layer in block:
-                layer: Union[nn.Module, ParsevalBasicBlock]
-                if isinstance(layer, ParsevalBasicBlock):
-                    for residual_layer in layer:
-                        if isinstance(residual_layer, nn.Conv2d):
-                            self._layers_needed_constrain["conv"].append(residual_layer)
+                if isinstance(layer, nn.Conv2d):
+                    self._layers_needed_constrain["conv"].append(layer)
                 if isinstance(layer, nn.Linear):
                     self._layers_needed_constrain["fc"].append(layer)
 
         # todo
-        if k == 17 and not ignore_first_conv:
+        if k == total_blocks and not ignore_first_conv:
             self._layers_needed_constrain["conv"].append(self.model.conv1)
 
         logger.debug(f"layers needed constrain: \n{self._layers_needed_constrain}")

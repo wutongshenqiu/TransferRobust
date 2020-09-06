@@ -189,7 +189,9 @@ class BaseTrainer:
             "best_acc": best_acc
         }, f"{self._checkpoint_path}")
 
+    # fixme
     def _load_from_checkpoint(self, checkpoint_path: str) -> None:
+        logger.warning("trainer that needed reset blocks may not support load from checkpoint!")
         checkpoint = torch.load(checkpoint_path)
         self.model.load_state_dict(checkpoint.get("model_weights"))
         self.optimizer.load_state_dict(checkpoint.get("optimizer"))

@@ -5,14 +5,14 @@ from typing import Tuple
 
 from ..parseval_trainer import ParsevalConstrainMixin
 from .tl_trainer import TransferLearningTrainer
-from src.networks import SupportedWideResnetType
+from src.networks import SupportedAllModuleType
 from src.utils import logger
 
 
 class ParsevalTransferLearningTrainer(TransferLearningTrainer, ParsevalConstrainMixin,):
 
     def __init__(self, beta: float, k: int, teacher_model_path: str,
-                 model: SupportedWideResnetType, train_loader: DataLoader,
+                 model: SupportedAllModuleType, train_loader: DataLoader,
                  test_loader: DataLoader, checkpoint_path: str = None):
         """we obey following ideas in `parseval transform learning trainer`
 
