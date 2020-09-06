@@ -29,11 +29,11 @@ class LinfPGDAttack:
     def __init__(self, model: torch.nn.Module, clip_min=0, clip_max=1,
                  random_init: int = 1, epsilon=8/255, step_size=2/255, num_steps=20,
                  loss_function: Callable[[Any], Tensor] = nn.CrossEntropyLoss(),
-                 dataset_name: str = settings.dataset_name
+                 dataset_name: str = settings.dataset_name, device: str = settings.device
                  ):
         dataset_mean, dataset_std = get_mean_and_std(dataset_name)
-        mean = torch.tensor(dataset_mean).view(3, 1, 1).to(settings.device)
-        std = torch.tensor(dataset_std).view(3, 1, 1).to(settings.device)
+        mean = torch.tensor(dataset_mean).view(3, 1, 1).to(device)
+        std = torch.tensor(dataset_std).view(3, 1, 1).to(device)
 
         clip_max = ((clip_max - mean) / std)
         clip_min = ((clip_min - mean) / std)
@@ -96,7 +96,7 @@ def test_attack(model: nn.Module, test_loader, attacker, params: Dict, device: s
     normal_acc = evaluate_accuracy(model, test_loader, device)
     logger.info(f"normal accuracy: {normal_acc}")
     model.eval()
-    _attacker = attacker(model, **params)
+    _attacker = attacker(model=model, device=device, **params)
     _attacker.print_parameters()
 
     correct = 0
@@ -123,7 +123,6 @@ if __name__ == '__main__':
                         get_mnist_test_dataloader_one_channel)
     import time
     import json
-
 
     params = {
         "random_init": 1,

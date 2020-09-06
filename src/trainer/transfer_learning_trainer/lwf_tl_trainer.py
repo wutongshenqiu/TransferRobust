@@ -28,12 +28,12 @@ import time
 import os
 import json
 
-from src.networks import SupportedWideResnetType
+from src.networks import SupportedAllModuleType
 from src.utils import evaluate_accuracy
 from .mixins import ReshapeTeacherFCLayerMixin
 from ..mixins import InitializeTensorboardMixin
 from ..retrain_trainer import ResetBlockMixin, FreezeModelMixin
-from src.networks import WRN34Block
+from src.networks import make_blocks
 from src.utils import logger
 
 
@@ -50,7 +50,7 @@ class LWFTransferLearningTrainer(ReshapeTeacherFCLayerMixin, ResetBlockMixin,
                                  FreezeModelMixin, InitializeTensorboardMixin):
 
     def __init__(self, _lambda: float, teacher_model_path: str,
-                 model: SupportedWideResnetType, train_loader: DataLoader,
+                 model: SupportedAllModuleType, train_loader: DataLoader,
                  test_loader: DataLoader, checkpoint_path: str = None):
         """`learning without forgetting` in transfer learning
 
@@ -82,7 +82,7 @@ class LWFTransferLearningTrainer(ReshapeTeacherFCLayerMixin, ResetBlockMixin,
                 # best accuracy of current model
                 self.best_acc = 0
 
-        self._blocks = WRN34Block(self.model)
+        self._blocks = make_blocks(self.model)
         # reset fc layer
         self.reset_last_k_blocks(1)
 
@@ -287,7 +287,7 @@ class LWFTransferLearningTrainer(ReshapeTeacherFCLayerMixin, ResetBlockMixin,
 
 class DatasetWithRobustFeatureRepresentations(Dataset):
 
-    def __init__(self, origin_train_loader: DataLoader, model: SupportedWideResnetType, device: torch.device):
+    def __init__(self, origin_train_loader: DataLoader, model: SupportedAllModuleType, device: torch.device):
         """extend origin dataset with robust feature representations
 
         Args:
@@ -337,26 +337,25 @@ class DatasetWithRobustFeatureRepresentations(Dataset):
 
 
 if __name__ == '__main__':
-    from src.networks import wrn34_10
-    from src.utils import (get_cifar_test_dataloader, get_cifar_train_dataloader,
+    from src.networks import resnet18
+    from src.utils import (get_mnist_train_dataloader, get_mnist_test_dataloader,
                            get_subset_cifar_train_dataloader)
     from src import settings
 
     _lambda = 0.1
 
-    for partition_ratio in [0.5, 0.2, 0.1]:
-        save_path = f"normalization_cifar100_lwf_tl_pgd7_lambda{_lambda}_ratio{partition_ratio}"
-        logger.change_log_file(settings.log_dir / f"{save_path}.log")
+    save_path = f"normalization_svhn_lwf_tl_pgd7_lambda{_lambda}"
+    logger.change_log_file(settings.log_dir / f"{save_path}.log")
 
-        model = wrn34_10(num_classes=10)
-        teacher_model_path = "/home/aiandiot/usb/qiufeng/TransformRobust/trained_models/cifar100_pgd7_train-best"
-        trainer = LWFTransferLearningTrainer(
-            _lambda=_lambda,
-            teacher_model_path=teacher_model_path,
-            model=model,
-            train_loader=get_subset_cifar_train_dataloader(partition_ratio=partition_ratio, dataset="cifar10"),
-            test_loader=get_cifar_test_dataloader("cifar10"),
-            checkpoint_path=str(settings.root_dir / "checkpoint" / f"{save_path}.pth")
-        )
+    model = resnet18(num_classes=10)
+    teacher_model_path = str(settings.root_dir / "trained_models/svhn_pgd7_train-best")
+    trainer = LWFTransferLearningTrainer(
+        _lambda=_lambda,
+        teacher_model_path=teacher_model_path,
+        model=model,
+        train_loader=get_mnist_train_dataloader(),
+        test_loader=get_mnist_test_dataloader(),
+        checkpoint_path=str(settings.root_dir / "checkpoint" / f"{save_path}.pth")
+    )
 
-        trainer.train(str(settings.root_dir / "trained_models" / save_path))
+    trainer.train(str(settings.root_dir / "trained_models" / save_path))

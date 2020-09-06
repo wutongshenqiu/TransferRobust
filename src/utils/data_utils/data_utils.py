@@ -1,4 +1,4 @@
-from typing import Dict, Any
+from typing import Dict, Any, Union
 import json
 
 from torch.utils.data import DataLoader
@@ -15,7 +15,7 @@ def clamp(t: Tensor, lower_limit, upper_limit):
 
 
 def evaluate_accuracy(model: Module, test_loader: DataLoader,
-                      device: torch.device, debug=False) -> float:
+                      device: Union[str, torch.device], debug=False) -> float:
     model.eval()
     correct = 0
     with torch.no_grad():
