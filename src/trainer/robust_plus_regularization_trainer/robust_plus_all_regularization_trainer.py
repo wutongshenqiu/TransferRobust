@@ -64,7 +64,10 @@ class RobustPlusAllRegularizationTrainer(ADVTrainer, InitializeTensorboardMixin)
         for k in range(1, total_blocks+1):
             logger.debug(f"register hook to the last layer of {k}th block")
             block = getattr(self._blocks, f"block{k}")
-            block.register_forward_hook(self._get_layer_outputs)
+            if isinstance(block, torch.nn.Sequential):
+                block[-1].register_forward_hook(self._get_layer_outputs)
+            else:
+                block.register_forward_hook(self._get_layer_outputs)
 
     def _get_layer_outputs(self, layer, inputs, outputs):
         if self.model.training:

@@ -119,8 +119,11 @@ class RobustPlusSingularRegularizationTrainer(ADVTrainer, InitializeTensorboardM
         logger.debug(f"model total blocks: {total_blocks}")
         logger.debug(f"register hook to the last layer of {k}th block from last")
         block = getattr(self._blocks, f"block{total_blocks+1-k}")
-        block.register_forward_hook(self.get_layer_outputs)
+        if isinstance(block, torch.nn.Sequential):
+            block[-1].register_forward_hook(self._get_layer_outputs)
+        else:
+            block.register_forward_hook(self._get_layer_outputs)
 
-    def get_layer_outputs(self, layer, inputs, outputs):
+    def _get_layer_outputs(self, layer, inputs, outputs):
         if self.model.training:
             self._hooked_features_list.append(outputs.clone().detach())
