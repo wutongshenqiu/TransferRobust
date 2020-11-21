@@ -1,5 +1,10 @@
 from pydantic import BaseSettings, validator
 
+import numpy as np
+import torch
+import os
+import random
+
 from typing import List, Optional, Union
 from pathlib import PurePath
 
@@ -12,6 +17,7 @@ class Settings(BaseSettings):
     log_dir: PurePath = root_dir / "logs"
     source_dir: PurePath = root_dir / "src"
     model_dir: PurePath = root_dir / "trained_models"
+    checkpoint_dir: PurePath = root_dir / "checkpoint"
     logger_config_file: PurePath = source_dir / "logger_config.toml"
     tensorboard_log_dir: PurePath = root_dir / "runs"
 
@@ -69,5 +75,24 @@ class Settings(BaseSettings):
     class Config:
         env_file = '.env'
 
+    seed: int = 751
+    reproducibility: bool = True
+
+
+def set_seed(seed_value):
+    print(f"using seed: {settings.seed}")
+    np.random.seed(seed_value)  # cpu vars
+    torch.manual_seed(seed_value)  # cpu  vars
+    random.seed(seed_value)  # Python
+    os.environ['PYTHONHASHSEED'] = str(seed_value)  # Python hash buildin
+    torch.cuda.manual_seed(seed_value)
+    torch.cuda.manual_seed_all(seed_value)  # gpu vars
+    torch.backends.cudnn.deterministic = True  # needed
+    torch.backends.cudnn.benchmark = False
+
 
 settings = Settings(_env_file=ENV_PATH)
+
+if settings.reproducibility:
+    set_seed(settings.seed)
+

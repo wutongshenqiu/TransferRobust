@@ -35,6 +35,7 @@ from ..mixins import InitializeTensorboardMixin
 from ..retrain_trainer import ResetBlockMixin, FreezeModelMixin
 from src.networks import make_blocks
 from src.utils import logger
+from src import settings
 
 
 # hyperparameters
