@@ -112,18 +112,27 @@ class RobustPlusSingularRegularizationTrainer(ADVTrainer, InitializeTensorboardM
         logger.info("finished training")
         logger.info(f"best robustness on test set: {best_robustness}")
 
-
     def _register_forward_hook_to_k_block(self, k):
         total_blocks = self._blocks.get_total_blocks()
         assert 1 <= k <= total_blocks
         logger.debug(f"model total blocks: {total_blocks}")
         logger.debug(f"register hook to the last layer of {k}th block from last")
-        block = getattr(self._blocks, f"block{total_blocks+1-k}")
+        # block = getattr(self._blocks, f"block{total_blocks+1-k}")
+        # input of next block
+        block = getattr(self._blocks, f"block{total_blocks-k}")
+        # FIXME
         if isinstance(block, torch.nn.Sequential):
-            block[-1].register_forward_hook(self._get_layer_outputs)
+            # block[-1].register_forward_hook(self._get_layer_outputs)
+            # input
+            block[0].register_forward_hook(self._get_layer_inputs)
         else:
-            block.register_forward_hook(self._get_layer_outputs)
+            block.register_forward_hook(self._get_layer_inputs)
 
+    # FIXME
     def _get_layer_outputs(self, layer, inputs, outputs):
         if self.model.training:
-            self._hooked_features_list.append(outputs.clone().detach())
+            self._hooked_features_list.append(outputs.clone())
+
+    def _get_layer_inputs(self, layer, inputs, outputs):
+        if self.model.training:
+            self._hooked_features_list.append(inputs[0].clone())

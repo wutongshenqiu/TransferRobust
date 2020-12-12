@@ -2,7 +2,7 @@
 # 避免 options 重复
 
 import functools
-from typing import Callable
+from typing import Callable, Iterable, Reversible, Union
 
 import click
 
@@ -24,13 +24,49 @@ from src.trainer import (TransferLearningTrainer, LWFTransferLearningTrainer,
 
 from src.attack import LinfPGDAttack
 
+_BasicOptions = [
+    click.option("-m", "--model", type=click.Choice(SupportModelList),
+                 default=DefaultModel, show_default=True, help="neural network"),
+    click.option("-n", "--num_classes", type=int,
+                 default=10, show_default=True, help="number of classes"),
+    click.option("-d", "--dataset", type=click.Choice(SupportDatasetList),
+                 default=DefaultDataset, show_default=True, help="dataset"),
+]
+
 
 @click.group()
 def cli():
     ...
 
 
+def apply_options(options: Union[Iterable, Reversible]):
+    def _decorators(f: Callable):
+        @functools.wraps(f)
+        def _apply():
+            nonlocal f
+            for option in reversed(options):
+                f = option(f)
+            return f
+
+        return _apply
+
+    return _decorators
+
+
+def composed(decs):
+    def deco(f):
+        for dec in reversed(decs):
+            f = dec(f)
+        return f
+    return deco
+
+
+def apply_test(f):
+    return composed(_BasicOptions)(f)
+
+
 @cli.command()
+# @apply_options(_BasicOptions)
 @click.option("-m", "--model", type=click.Choice(SupportModelList),
               default=DefaultModel, show_default=True, help="neural network")
 @click.option("-n", "--num_classes", type=int,
@@ -197,9 +233,9 @@ def nt(model, num_classes, dataset):
               default=DefaultDataset, show_default=True, help="dataset")
 @click.option("--random_init/--no_random_init", default=True,
               show_default=True, help="PGD/BIM")
-@click.option("-e", "--epsilon", type=float, default=8/255,
+@click.option("-e", "--epsilon", type=float, default=8 / 255,
               show_default=True, help="epsilon")
-@click.option("-ss", "--step_size", type=float, default=2/255,
+@click.option("-ss", "--step_size", type=float, default=2 / 255,
               show_default=True, help="step size")
 @click.option("-ns", "--num_steps", type=int, default=7,
               show_default=True, help="num steps")
@@ -234,9 +270,9 @@ def at(model, num_classes, dataset, random_init, epsilon, step_size, num_steps):
               default=DefaultDataset, show_default=True, help="dataset")
 @click.option("--random_init/--no_random_init", default=True,
               show_default=True, help="PGD/BIM")
-@click.option("-e", "--epsilon", type=float, default=8/255,
+@click.option("-e", "--epsilon", type=float, default=8 / 255,
               show_default=True, help="epsilon")
-@click.option("-ss", "--step_size", type=float, default=2/255,
+@click.option("-ss", "--step_size", type=float, default=2 / 255,
               show_default=True, help="step size")
 @click.option("-ns", "--num_steps", type=int, default=7,
               show_default=True, help="num steps")
@@ -246,7 +282,7 @@ def at(model, num_classes, dataset, random_init, epsilon, step_size, num_steps):
               help="penalization rate of layer norm")
 def cartl(model, num_classes, dataset, random_init, epsilon, step_size, num_steps, k, lambda_):
     """Cooperative Adversarially-Robust TransferLearning"""
-    save_name = f"cartl_{model}_{dataset}"
+    save_name = f"cartl_{model}_{dataset}_{k}_{lambda_}"
     logger.change_log_file(f"{settings.log_dir / save_name}.log")
     params = {
         "random_init": random_init,

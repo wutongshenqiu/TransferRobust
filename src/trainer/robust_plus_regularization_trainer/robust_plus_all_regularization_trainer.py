@@ -1,4 +1,5 @@
 from typing import Dict
+import warnings
 
 import torch
 from torch.utils.data import DataLoader
@@ -12,6 +13,7 @@ from src.networks import SupportedAllModuleType, make_blocks
 class RobustPlusAllRegularizationTrainer(ADVTrainer, InitializeTensorboardMixin):
     def __init__(self, _lambda: float, model: SupportedAllModuleType, train_loader: DataLoader,
                  test_loader: DataLoader, attacker, params: Dict, checkpoint_path: str = None):
+        warnings.warn(f"trainer {RobustPlusAllRegularizationTrainer.__name__} should not be used!")
         super().__init__(model, train_loader, test_loader,
                          attacker, params, checkpoint_path)
         self._blocks = make_blocks(model)
@@ -71,7 +73,7 @@ class RobustPlusAllRegularizationTrainer(ADVTrainer, InitializeTensorboardMixin)
 
     def _get_layer_outputs(self, layer, inputs, outputs):
         if self.model.training:
-            self._hooked_features_list.append(outputs.clone().detach())
+            self._hooked_features_list.append(outputs.clone())
 
 
 if __name__ == '__main__':
