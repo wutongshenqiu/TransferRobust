@@ -31,11 +31,13 @@ class RobustPlusSingularRegularizationTrainer(ADVTrainer, InitializeTensorboardM
 
         r_adv = self._hooked_features_list[0]
         r_clean = self._hooked_features_list[1]
-        # so stupid!
+        flatten_deviation = (r_adv - r_clean).view(r_adv.shape[0], -1)
+        # divide sqrt(d)
         regularization_term = self._lambda * torch.norm(
-            (r_adv - r_clean).view(r_adv.shape[0], -1),
-            dim=1
-        ).sum()
+            flatten_deviation,
+            dim=1,
+            p=2
+        ).sum() / torch.sqrt(flatten_deviation[1])
         # logger.debug(f"d_loss: {regularization_term}")
 
         self._hooked_features_list.clear()
@@ -123,7 +125,7 @@ class RobustPlusSingularRegularizationTrainer(ADVTrainer, InitializeTensorboardM
         # FIXME
         if isinstance(block, torch.nn.Sequential):
             # block[-1].register_forward_hook(self._get_layer_outputs)
-            # input
+            # input of next block
             block[0].register_forward_hook(self._get_layer_inputs)
         else:
             block.register_forward_hook(self._get_layer_inputs)
