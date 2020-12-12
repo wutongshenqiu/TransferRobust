@@ -4,6 +4,8 @@ import time
 import torch
 from torch.utils.data import DataLoader
 
+import numpy as np
+
 from ..adv_trainer import ADVTrainer
 from ..mixins import InitializeTensorboardMixin
 from src.utils import logger
@@ -37,7 +39,7 @@ class RobustPlusSingularRegularizationTrainer(ADVTrainer, InitializeTensorboardM
             flatten_deviation,
             dim=1,
             p=2
-        ).sum() / torch.sqrt(flatten_deviation.shape[1])
+        ).sum() / np.sqrt(flatten_deviation.shape[1])
         # logger.debug(f"d_loss: {regularization_term}")
 
         self._hooked_features_list.clear()
