@@ -37,7 +37,7 @@ class RobustPlusSingularRegularizationTrainer(ADVTrainer, InitializeTensorboardM
             flatten_deviation,
             dim=1,
             p=2
-        ).sum() / torch.sqrt(flatten_deviation[1])
+        ).sum() / torch.sqrt(flatten_deviation.shape[1])
         # logger.debug(f"d_loss: {regularization_term}")
 
         self._hooked_features_list.clear()
