@@ -106,6 +106,7 @@ class RobustPlusSingularRegularizationTrainer(ADVTrainer, InitializeTensorboardM
                         self.summary_writer.add_scalar("train accuracy", average_train_accuracy, ep)
                         self.summary_writer.add_scalar("test accuracy", acc, ep)
                         self.summary_writer.add_scalar("time per epoch", epoch_cost_time, ep)
+                        self.summary_writer.add_scalar("best robustness", average_robust_accuracy)
 
                     logger.info(
                         f"epoch: {ep}   loss: {average_train_loss:.6f}   train accuracy: {average_train_accuracy}   "
