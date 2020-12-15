@@ -100,6 +100,13 @@ class RobustPlusSingularRegularizationTrainer(ADVTrainer, InitializeTensorboardM
                     average_robust_accuracy = self._robust_acc / batch_number
                     epoch_cost_time = end_time - start_time
 
+                    # write loss, time, test_acc, train_acc to tensorboard
+                    if hasattr(self, "summary_writer"):
+                        self.summary_writer.add_scalar("train loss", average_train_loss, ep)
+                        self.summary_writer.add_scalar("train accuracy", average_train_accuracy, ep)
+                        self.summary_writer.add_scalar("test accuracy", acc, ep)
+                        self.summary_writer.add_scalar("time per epoch", epoch_cost_time, ep)
+
                     logger.info(
                         f"epoch: {ep}   loss: {average_train_loss:.6f}   train accuracy: {average_train_accuracy}   "
                         f"test accuracy: {acc}   robust accuracy: {average_robust_accuracy}   "
@@ -123,7 +130,7 @@ class RobustPlusSingularRegularizationTrainer(ADVTrainer, InitializeTensorboardM
         logger.debug(f"register hook to the last layer of {k}th block from last")
         # block = getattr(self._blocks, f"block{total_blocks+1-k}")
         # input of next block
-        block = getattr(self._blocks, f"block{total_blocks-k}")
+        block = getattr(self._blocks, f"block{total_blocks-k+1}")
         # FIXME
         if isinstance(block, torch.nn.Sequential):
             # block[-1].register_forward_hook(self._get_layer_outputs)
