@@ -2,7 +2,7 @@
 # 避免 options 重复
 
 import functools
-from typing import Callable, Iterable, Reversible, Union
+from typing import Callable, Iterable, Reversible, Union, List
 
 import click
 
