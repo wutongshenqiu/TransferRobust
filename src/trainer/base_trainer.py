@@ -96,7 +96,8 @@ class BaseTrainer:
         logger.info(f"best accuracy on test set: {best_acc}")
 
         # save last model
-        self._save_model(f"{save_path}-last")
+        # imTyrant changed the '_save_model' to '_save_last_model'
+        self._save_last_model(f"{save_path}-last")
 
     def step_batch(self, inputs: torch.Tensor, labels: torch.Tensor) -> Tuple[float, float]:
         raise NotImplementedError("must overwrite method `step_epoch`")
@@ -159,6 +160,11 @@ class BaseTrainer:
             json.dump(info, f)
         self._save_model(f"{save_path}-best")
 
+    # Added by imTyrant.
+    # Used for saving the latest model. I added it for 'SpectralNormTransferLearningTrainer'.
+    def _save_last_model(self, save_path: str)->None:
+        self._save_model(save_path)
+
     def _save_model(self, save_path: str):
         torch.save(self.model.state_dict(), save_path)
 
@@ -189,6 +195,13 @@ class BaseTrainer:
             "best_acc": best_acc
         }, f"{self._checkpoint_path}")
 
+        # Added by imTyrant
+        # For saving 'numpy' and 'torch' random state.
+        if hasattr(settings, "save_rand_state") and settings.save_rand_state:
+            from src.utils import RandStateSnapshooter
+            RandStateSnapshooter.lazy_take(f"{self._checkpoint_path}.rand")
+            logger.debug(f"random state is saved to '{self._checkpoint_path}.rand'")
+
     # fixme
     def _load_from_checkpoint(self, checkpoint_path: str) -> None:
         logger.warning("trainer that needed reset blocks may not support load from checkpoint!")
@@ -200,3 +213,17 @@ class BaseTrainer:
 
         self.start_epoch = start_epoch
         self.best_acc = best_acc
+
+        # Added by imTyrant
+        # For loading and setting random state.
+        if hasattr(settings, "save_rand_state") and settings.save_rand_state:
+            from src.utils import RandStateSnapshooter
+            
+            if not os.path.exists(f"{self._checkpoint_path}.rand"):
+                # Since no deterministically resuming is not consierred, previously, 
+                # '.rand' file may not exist.
+                return
+
+            RandStateSnapshooter.lazy_set(f"{self._checkpoint_path}.rand")
+            # imTyrant: High logging level is for notification.
+            logger.warning("loaded random state from '{self._checkpoint_path}.rand'")

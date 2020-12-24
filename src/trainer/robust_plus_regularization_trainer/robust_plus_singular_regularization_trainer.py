@@ -124,6 +124,8 @@ class RobustPlusSingularRegularizationTrainer(ADVTrainer, InitializeTensorboardM
         logger.info("finished training")
         logger.info(f"best robustness on test set: {best_robustness}")
 
+        self._save_last_model(f"{save_path}-last") # imTyrant added it for saving last model.
+
     def _register_forward_hook_to_k_block(self, k):
         total_blocks = self._blocks.get_total_blocks()
         assert 1 <= k <= total_blocks
