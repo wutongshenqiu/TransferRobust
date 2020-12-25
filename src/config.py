@@ -38,6 +38,8 @@ class Settings(BaseSettings):
     # CE for cross-entropy and MSE for mean-square-error
     criterion: str = "CE"
 
+    save_rand_state: bool = True
+
     @validator("criterion")
     def criterion_must_be_correct(cls, v):
         if v == "CE":

@@ -2,7 +2,7 @@
 # 避免 options 重复
 
 import functools
-from typing import Callable, Iterable, Reversible, Union
+from typing import Callable, Iterable, Reversible, Union, Iterator
 
 import click
 
@@ -73,23 +73,24 @@ def apply_test(f):
               default=10, show_default=True, help="number of classes")
 @click.option("-d", "--dataset", type=click.Choice(SupportDatasetList),
               default=DefaultDataset, show_default=True, help="dataset")
-@click.option("-k", "--k", type=int, required=True,
+@click.option("-k", "--k", type=int, multiple=True, required=True,
               help="trainable blocks from last")
 @click.option("-t", "--teacher", type=str, required=True,
               help="filename of teacher model")
 def tl(model, num_classes, dataset, k, teacher):
     """transform leanring"""
-    save_name = f"tl_{model}_{dataset}_{k}"
-    logger.change_log_file(f"{settings.log_dir / save_name}.log")
-    trainer = TransferLearningTrainer(
-        k=k,
-        teacher_model_path=str(settings.model_dir / teacher),
-        model=get_model(model, num_classes, k),
-        train_loader=get_train_dataset(dataset),
-        test_loader=get_test_dataset(dataset),
-        checkpoint_path=f"{settings.checkpoint_dir / save_name}.pth"
-    )
-    trainer.train(f"{settings.model_dir / save_name}")
+    for _k in k:
+        save_name = f"tl_{model}_{dataset}_{_k}_{teacher}"
+        logger.change_log_file(f"{settings.log_dir / save_name}.log")
+        trainer = TransferLearningTrainer(
+            k=_k,
+            teacher_model_path=str(settings.model_dir / teacher),
+            model=get_model(model, num_classes, _k),
+            train_loader=get_train_dataset(dataset),
+            test_loader=get_test_dataset(dataset),
+            checkpoint_path=f"{settings.checkpoint_dir / save_name}.pth"
+        )
+        trainer.train(f"{settings.model_dir / save_name}")
 
 
 @cli.command()
@@ -125,26 +126,29 @@ def lwf(model, num_classes, dataset, lambda_, teacher):
               default=10, show_default=True, help="number of classes")
 @click.option("-d", "--dataset", type=click.Choice(SupportDatasetList),
               default=DefaultDataset, show_default=True, help="dataset")
-@click.option("-b", "--beta", type=float,
+@click.option("-b", "--beta", type=float, multiple=True,
               default=1e-3, show_default=True, help="penalization rate of constrain")
-@click.option("-k", "--k", type=int, required=True,
+@click.option("-k", "--k", type=int, multiple=True, required=True,
               help="trainable blocks from last")
 @click.option("-t", "--teacher", type=str, required=True,
               help="filename of teacher model")
 def ptl(model, num_classes, dataset, beta, k, teacher):
     """parseval transform learning"""
-    save_name = f"ptl_{model}_{dataset}_{beta}_{k}"
-    logger.change_log_file(f"{settings.log_dir / save_name}.log")
-    trainer = ParsevalTransferLearningTrainer(
-        beta=beta,
-        k=k,
-        teacher_model_path=str(settings.model_dir / teacher),
-        model=get_model(model, num_classes, k),
-        train_loader=get_train_dataset(dataset),
-        test_loader=get_test_dataset(dataset),
-        checkpoint_path=f"{settings.checkpoint_dir / save_name}.pth"
-    )
-    trainer.train(f"{settings.model_dir / save_name}")
+    for _beta in beta:
+        for _k in k:
+            save_name = f"ptl_{model}_{dataset}_{_beta}_{_k}_from_{teacher}"
+            logger.change_log_file(f"{settings.log_dir / save_name}.log")
+
+            trainer = ParsevalTransferLearningTrainer(
+                beta=_beta,
+                k=_k,
+                teacher_model_path=str(settings.model_dir / teacher),
+                model=get_model(model, num_classes, _k),
+                train_loader=get_train_dataset(dataset),
+                test_loader=get_test_dataset(dataset),
+                checkpoint_path=f"{settings.checkpoint_dir / save_name}.pth"
+            )
+            trainer.train(f"{settings.model_dir / save_name}")
 
 
 @cli.command()

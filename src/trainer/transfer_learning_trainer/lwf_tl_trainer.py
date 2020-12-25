@@ -225,6 +225,13 @@ class LWFTransferLearningTrainer(ReshapeTeacherFCLayerMixin, ResetBlockMixin,
             "best_acc": best_acc
         }, f"{self._checkpoint_path}")
 
+        # Added by imTyrant
+        # For saving 'numpy' and 'torch' random state.
+        if hasattr(settings, "save_rand_state") and settings.save_rand_state:
+            from src.utils import RandStateSnapshooter
+            RandStateSnapshooter.lazy_take(f"{self._checkpoint_path}.rand")
+            logger.debug(f"random state is saved to '{self._checkpoint_path}.rand'")
+
     def _save_best_model(self, save_path, current_epochs, accuracy):
         """save best model with current info"""
         info = {
@@ -247,6 +254,20 @@ class LWFTransferLearningTrainer(ReshapeTeacherFCLayerMixin, ResetBlockMixin,
 
         self.start_epoch = start_epoch
         self.best_acc = best_acc
+
+        # Added by imTyrant
+        # For loading and setting random state.
+        if hasattr(settings, "save_rand_state") and settings.save_rand_state:
+            from src.utils import RandStateSnapshooter
+            
+            if not os.path.exists(f"{self._checkpoint_path}.rand"):
+                # Since no deterministically resuming is not consierred, previously, 
+                # '.rand' file may not exist.
+                return
+
+            RandStateSnapshooter.lazy_set(f"{self._checkpoint_path}.rand")
+            # imTyrant: High logging level is for notification.
+            logger.warning("loaded random state from '{self._checkpoint_path}.rand'")
 
     def _init_hyperparameters(self):
         self._lr = _LEARNING_RATE
