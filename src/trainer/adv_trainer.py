@@ -71,6 +71,7 @@ class BaseADVTrainer(BaseTrainer):
         logger.info("finished training")
         logger.info(f"best robustness on test set: {best_robustness}")
 
+        self._save_last_model(f"{save_path}-last") # imTyrant added it for saving last model.
 
 class ADVTrainer(BaseADVTrainer):
     def __init__(self, model: SupportedAllModuleType, train_loader: DataLoader,
