@@ -10,6 +10,7 @@ import torch
 
 from .utils import (DefaultDataset, SupportDatasetList,
                     DefaultModel, SupportModelList,
+                    SupportParsevalModelList, SupportNormalModelList,
                     get_test_dataset, get_train_dataset,
                     get_model)
 
@@ -94,7 +95,7 @@ def tl(model, num_classes, dataset, k, teacher):
 
 
 @cli.command()
-@click.option("-m", "--model", type=click.Choice(SupportModelList),
+@click.option("-m", "--model", type=click.Choice(SupportNormalModelList),
               default=DefaultModel, show_default=True, help="neural network")
 @click.option("-n", "--num_classes", type=int,
               default=10, show_default=True, help="number of classes")
@@ -120,7 +121,7 @@ def lwf(model, num_classes, dataset, lambda_, teacher):
 
 
 @cli.command()
-@click.option("-m", "--model", type=click.Choice(SupportModelList),
+@click.option("-m", "--model", type=click.Choice(SupportParsevalModelList),
               default=DefaultModel, show_default=True, help="neural network")
 @click.option("-n", "--num_classes", type=int,
               default=10, show_default=True, help="number of classes")
@@ -152,7 +153,7 @@ def ptl(model, num_classes, dataset, beta, k, teacher):
 
 
 @cli.command()
-@click.option("-m", "--model", type=click.Choice(SupportModelList),
+@click.option("-m", "--model", type=click.Choice(SupportNormalModelList),
               default=DefaultModel, show_default=True, help="neural network")
 @click.option("-n", "--num_classes", type=int,
               default=10, show_default=True, help="number of classes")
@@ -179,7 +180,7 @@ def nr(model, num_classes, dataset, k, state_dict):
 
 
 @cli.command()
-@click.option("-m", "--model", type=click.Choice(SupportModelList),
+@click.option("-m", "--model", type=click.Choice(SupportParsevalModelList),
               default=DefaultModel, show_default=True, help="neural network")
 @click.option("-n", "--num_classes", type=int,
               default=10, show_default=True, help="number of classes")
@@ -209,7 +210,7 @@ def pr(model, num_classes, dataset, k, beta, state_dict):
 
 
 @cli.command()
-@click.option("-m", "--model", type=click.Choice(SupportModelList),
+@click.option("-m", "--model", type=click.Choice(SupportNormalModelList),
               default=DefaultModel, show_default=True, help="neural network")
 @click.option("-n", "--num_classes", type=int,
               default=10, show_default=True, help="number of classes")
