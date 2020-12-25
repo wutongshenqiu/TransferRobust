@@ -226,4 +226,4 @@ class BaseTrainer:
 
             RandStateSnapshooter.lazy_set(f"{self._checkpoint_path}.rand")
             # imTyrant: High logging level is for notification.
-            logger.warning("loaded random state from '{self._checkpoint_path}.rand'")
+            logger.warning(f"loaded random state from '{self._checkpoint_path}.rand'")
