@@ -89,8 +89,9 @@ class FreezeModelMixin:
     def freeze_bn_layer(self):
         # difference between modules and parameters
         # https://blog.paperspace.com/pytorch-101-advanced/
-        for p in self.model.modules():
-            if isinstance(p, BatchNorm2d):
-                p.requires_grad = False
+        for layer in self.model.modules():
+            if isinstance(layer, BatchNorm2d):
+                for p in layer.parameters():
+                    p.requires_grad = False
 
         logger.debug("all batch norm layers are freezed")
