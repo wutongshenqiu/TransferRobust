@@ -141,11 +141,7 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
-# pycharm config
-.idea/
-
 trained_models/
 logs/
 checkpoint/
 runs/
-.vscode/

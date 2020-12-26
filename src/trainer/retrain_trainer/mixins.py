@@ -1,5 +1,7 @@
 from typing import Union
 
+from torch.nn import BatchNorm2d
+
 from src.utils import logger
 from src.networks import WRN34Block, Resnet18Block
 from src.networks import SupportedAllModuleType
@@ -83,3 +85,12 @@ class FreezeModelMixin:
             p.requires_grad = True
 
         logger.debug(f"all parameters of model are unfreezed")
+
+    def freeze_bn_layer(self):
+        # difference between modules and parameters
+        # https://blog.paperspace.com/pytorch-101-advanced/
+        for p in self.model.modules():
+            if isinstance(p, BatchNorm2d):
+                p.requires_grad = False
+
+        logger.debug("all batch norm layers are freezed")

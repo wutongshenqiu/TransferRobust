@@ -19,21 +19,14 @@
 
    ```bash
    pip install -r requirements.txt
+   pip install --editable .
    ```
 
-3. set hyperparameters in `src/config.py`
+3. create empty directories named `trained_models`、`checkpoint`、`logs`
 
-4. set training parameters in `src/train.py` according to our examples
+4. set hyperparameters in `src/config.py`
 
-5. start training
+5. use `cli --help` to see training options
 
-   ```bash
-   python -m src.train
-   ```
-
-6. test robustness
-
-   ```bash
-   python -m src.attack
-   ```
+   ![image-20201225110921457](readme.assets/image-20201225110921457.png)
 
