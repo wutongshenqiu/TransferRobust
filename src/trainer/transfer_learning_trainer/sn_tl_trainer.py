@@ -42,6 +42,7 @@ class SpectralNormTransferLearningTrainer(TransferLearningTrainer):
         
         # Freeze BatchNorm layers during fine-tuning
         if freeze_bn: 
+            logger.debug(f"Freezeing ALL BatchNorm Layers of the training model.")
             self.freeze_bn_layer()
 
     
