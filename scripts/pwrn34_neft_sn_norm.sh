@@ -41,9 +41,9 @@ done
 TEACHER_MODEL=cartl_wrn34_cifar100_8_1.0-best_robust
 echo "#######################################################"
 echo "using NEFT(SN) to transfer from ${TEACHER_MODEL}"
-python -m exps.neft_spectrum_norm --model pwrn34 --num_classes 10 --dataset cifar10 --teacher ${TEACHER_MODEL} -k 8
+python -m exps.neft_spectrum_norm --model pwrn34 --num_classes 10 --dataset cifar10 --teacher ${TEACHER_MODEL} -k 8  --power-iter ${POWER_ITER} --norm-beta ${NORM_BETA}
 valid
-python -m exps.eval_robust_pwrn34 --model=${MODEL_PATH}/sntl_pwrn34_cifar10_8_${TEACHER_MODEL}-last -k=8 \
+python -m exps.eval_robust_pwrn34 --model=${MODEL_PATH}/sntl_${POWER_ITER}_${NORM_BETA}_pwrn34_cifar10_8_${TEACHER_MODEL}-last -k=8 \
         --log=sntl.log --result-file=logs/sntl.json
 valid
 

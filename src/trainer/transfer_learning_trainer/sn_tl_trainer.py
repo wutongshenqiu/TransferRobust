@@ -19,7 +19,7 @@ from src.utils.spectral_norm import spectral_norm, remove_spectral_norm
 class SpectralNormTransferLearningTrainer(TransferLearningTrainer):
     def __init__(self, k: int, teacher_model_path: str,
                  model: SupportedAllModuleType, train_loader: DataLoader,
-                 test_loader: DataLoader, power_iter:int=1, norm_beta:float=1.0, checkpoint_path: str = None):
+                 test_loader: DataLoader, power_iter:int=1, norm_beta:float=1.0, freeze_bn:bool=False, checkpoint_path: str = None):
 
         # Ugly Hack
         # For adapt 'BaseTrainer', since it loads checkpoint during init before layers add spectral norm
@@ -39,6 +39,10 @@ class SpectralNormTransferLearningTrainer(TransferLearningTrainer):
             if os.path.exists(checkpoint_path):
                 logger.warning("We load checkpoint here")
                 self._load_from_checkpoint(checkpoint_path)
+        
+        # Freeze BatchNorm layers during fine-tuning
+        if freeze_bn: 
+            self.freeze_bn_layer()
 
     
     def _apply_spectral_norm(self, k):
