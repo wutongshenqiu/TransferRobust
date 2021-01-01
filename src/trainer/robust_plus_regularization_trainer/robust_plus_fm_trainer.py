@@ -26,7 +26,11 @@ class RobustPlusFeatureMatchingTrainer(ADVTrainer, InitializeTensorboardMixin):
     def step_batch(self, inputs: torch.Tensor, labels: torch.Tensor):
         inputs, labels = inputs.to(self._device), labels.to(self._device)
 
+        # here we freeze parameters for speedup
+        self._freeze_trainable_parameters()
         adv_inputs = self._gen_adv(inputs.detach().clone(), labels)
+        self._unfreeze_trainable_parameters()
+
         adv_outputs = self.model(adv_inputs)
         clean_outputs = self.model(inputs)
 
@@ -150,3 +154,13 @@ class RobustPlusFeatureMatchingTrainer(ADVTrainer, InitializeTensorboardMixin):
     def _get_layer_inputs(self, layer, inputs, outputs):
         if self.model.training:
             self._hooked_features_list.append(inputs[0].clone())
+    
+    def _freeze_trainable_parameters(self):
+        for p in self.model.parameters():
+            p.requires_grad = False
+        logger.debug(f"all trainable parameters of model are freezed")
+    
+    def _unfreeze_trainable_parameters(self):
+        for p in self.model.parameters():
+            p.requires_grad = True
+        logger.debug(f"all trainable parameters of model are unfreezed")
