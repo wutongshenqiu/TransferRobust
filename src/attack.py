@@ -5,7 +5,7 @@ from torch import Tensor
 import torch.nn as nn
 
 from . import settings
-from .utils import logger, get_mean_and_std, clamp, evaluate_accuracy, RandStateSnapshooter
+from .utils import logger, get_mean_and_std, clamp, evaluate_accuracy
 
 
 attack_params = {
@@ -87,7 +87,8 @@ class LinfPGDAttack:
             "num_steps": self.num_steps,
             "random_init": self.random_init,
         }
-        params_str = "\n".join([": ".join(map(str, item)) for item in params.items()])
+        params_str = "\n".join([": ".join(map(str, item))
+                                for item in params.items()])
         logger.info(f"using attack: {type(self).__name__}")
         logger.info(f"attack parameters: \n{params_str}")
 
@@ -126,44 +127,53 @@ if __name__ == '__main__':
 
     params = {
         "random_init": 1,
-        "epsilon": 0.3,
-        "step_size": 0.01,
-        "num_steps": 40,
-        "dataset_name": "mnist",
+        "epsilon": 8/255,
+        "step_size": 2/255,
+        "num_steps": 20,
+        "dataset_name": "cifar100",
     }
-    
+
     result = {}
-    # model = wrn34_10(num_classes=10)
     _lambda = 1
     map_beta = {1e-3: "1e-3", 2e-3: "2e-3", 3e-4: "3e-4", 6e-4: "6e-4"}
-    
-    logger.change_log_file(settings.log_dir / f"normalization_svhn_tl_normal_svhn_resnet18_eps0.3_attack.log")
-    test_loader = get_mnist_test_dataloader()
-    model = resnet18(num_classes=10)
 
-    # set initial random state
-    initial_state = RandStateSnapshooter.take_snapshot()
-    for k in range(1, 10):
-        RandStateSnapshooter.set_rand_state(initial_state)
-        model_path = f"./trained_models/normalization_svhn_tl_normal_svhn_resnet18_blocks{k}-best"
+    model_list = [
+        "trained_models/bn_freeze_ptl_pwrn34_cifar10_0.001_4_from_cartl_wrn34_cifar100_4_0.01-best_robust-best",
+        "trained_models/bn_freeze_ptl_pwrn34_cifar10_0.0006_4_from_cartl_wrn34_cifar100_4_0.01-best_robust-best",
+        "trained_models/bn_freeze_ptl_pwrn34_cifar10_0.0003_4_from_cartl_wrn34_cifar100_4_0.01-best_robust-best",
+        "trained_models/bn_freeze_ptl_pwrn34_cifar10_0.001_4_from_cartl_wrn34_cifar100_4_0.005-best_robust-best",
+        "trained_models/bn_freeze_ptl_pwrn34_cifar10_0.0006_4_from_cartl_wrn34_cifar100_4_0.005-best_robust-best",
+        "trained_models/bn_freeze_ptl_pwrn34_cifar10_0.0003_4_from_cartl_wrn34_cifar100_4_0.005-best_robust-best",
+        
+        # "trained_models/ptl_pwrn34_cifar10_0.001_8_from_cartl_wrn34_cifar100_8_0.01-best_robust-best",
+        # "trained_models/ptl_pwrn34_cifar10_0.0006_8_from_cartl_wrn34_cifar100_8_0.01-best_robust-best",
+        # "trained_models/ptl_pwrn34_cifar10_0.0003_8_from_cartl_wrn34_cifar100_8_0.01-best_robust-best",
+        
+        # "trained_models/ptl_pwrn34_cifar10_0.001_6_from_cartl_wrn34_cifar100_6_0.01-best_robust-best",
+        # "trained_models/ptl_pwrn34_cifar10_0.0006_6_from_cartl_wrn34_cifar100_6_0.01-best_robust-best",
+        # "trained_models/ptl_pwrn34_cifar10_0.0003_6_from_cartl_wrn34_cifar100_6_0.01-best_robust-best",
+        # "trained_models/ptl_pwrn34_cifar10_0.001_6_from_cartl_wrn34_cifar100_6_0.005-best_robust-best",
+        # "trained_models/ptl_pwrn34_cifar10_0.0006_6_from_cartl_wrn34_cifar100_6_0.005-best_robust-best",
+        # "trained_models/ptl_pwrn34_cifar10_0.0003_6_from_cartl_wrn34_cifar100_6_0.005-best_robust-best",
 
+    ]
+    logger.change_log_file(settings.log_dir / f"k4_attack.log")
+    test_loader = get_cifar_test_dataloader("cifar10")
+    model = parseval_retrain_wrn34_10(num_classes=10, k=4)
+
+    result = dict()
+    for model_path in model_list:
+        # TODO
         logger.debug(f"load from `{model_path}`")
-        model.load_state_dict(torch.load(model_path, map_location=settings.device))
+        model.load_state_dict(torch.load(
+            model_path, map_location=settings.device))
         model.to(settings.device)
         start_time = time.perf_counter()
         acc = test_attack(model, test_loader, LinfPGDAttack, params)
         end_time = time.perf_counter()
 
+        result[model_path] = acc
+
         logger.info(f"costing time: {end_time-start_time:.2f} secs")
 
-    # for k in range(1, 18):
-    #     model_path = f"./trained_models/normalization_cifar100_tl_pgd7_blocks{k}-best"
-    #
-    #     logger.debug(f"load from `{model_path}`")
-    #     model.load_state_dict(torch.load(model_path, map_location=settings.device))
-    #     model.to(settings.device)
-    #     start_time = time.perf_counter()
-    #     acc = test_attack(model, test_loader, LinfPGDAttack, params)
-    #     end_time = time.perf_counter()
-    #
-    #     logger.info(f"costing time: {end_time-start_time:.2f} secs")
+    logger.info(result)
