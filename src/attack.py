@@ -5,7 +5,7 @@ from torch import Tensor
 import torch.nn as nn
 
 from . import settings
-from .utils import logger, get_mean_and_std, clamp, evaluate_accuracy
+from .utils import logger, get_mean_and_std, clamp, evaluate_accuracy, RandStateSnapshooter
 
 
 attack_params = {
@@ -141,7 +141,10 @@ if __name__ == '__main__':
     test_loader = get_mnist_test_dataloader()
     model = resnet18(num_classes=10)
 
+    # set initial random state
+    initial_state = RandStateSnapshooter.take_snapshot()
     for k in range(1, 10):
+        RandStateSnapshooter.set_rand_state(initial_state)
         model_path = f"./trained_models/normalization_svhn_tl_normal_svhn_resnet18_blocks{k}-best"
 
         logger.debug(f"load from `{model_path}`")

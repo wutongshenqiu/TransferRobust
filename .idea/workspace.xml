@@ -21,7 +21,7 @@
   <component name="ChangeListManager">
     <list default="true" id="b25ca8f6-c0ea-4a12-bf02-b71fd1adcf5c" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/trainer/robust_plus_regularization_trainer/robust_plus_singular_regularization_trainer.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/trainer/robust_plus_regularization_trainer/robust_plus_singular_regularization_trainer.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/attack.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/attack.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -109,6 +109,7 @@
       <workItem from="1608900187234" duration="5695000" />
       <workItem from="1608996979046" duration="275000" />
       <workItem from="1609601248002" duration="168000" />
+      <workItem from="1609601495124" duration="939000" />
     </task>
     <servers />
   </component>
