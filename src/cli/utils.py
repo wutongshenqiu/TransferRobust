@@ -17,7 +17,7 @@ SupportParsevalModelList = ['pres18', 'pwrn34']
 SupportModelList = SupportNormalModelList + SupportParsevalModelList
 DefaultModel = 'res18'
 
-SupportDatasetList = ['cifar10', 'cifar100', 'mnist', 'svhn']
+SupportDatasetList = ['cifar10', 'cifar100', 'mnist', 'svhn', 'svhntl']
 DefaultDataset = 'mnist'
 
 
