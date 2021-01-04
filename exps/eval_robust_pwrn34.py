@@ -5,6 +5,7 @@ from torch import Tensor
 import torch.nn as nn
 
 from src import settings
+from src.config import set_seed
 from src.utils import logger, get_mean_and_std, clamp, evaluate_accuracy
 
 class LinfPGDAttack:
@@ -120,6 +121,7 @@ if __name__ == '__main__':
 
     parser  = argparse.ArgumentParser()
     parser.add_argument("-m", "--model", type=str, default=None)
+    parser.add_argument("--model-type", type=str, required=True)
     parser.add_argument("-k", "--k", type=int, default=1)
     parser.add_argument("--log", type=str, default=None)
     parser.add_argument("--result-file", type=str, default=None)
@@ -146,13 +148,17 @@ if __name__ == '__main__':
         logger.change_log_file(settings.log_dir / args.log)
 
     test_loader = get_cifar_test_dataloader("cifar10")
-    model = parseval_retrain_wrn34_10(k=args.k, num_classes=10)
-    # model = wrn34_10(num_classes=10)
+    if args.model_type == "pwrn34":
+        model = parseval_retrain_wrn34_10(k=args.k, num_classes=10)
+    elif args.model_type == "wrn34":
+        model = wrn34_10(num_classes=10)
+    else:
+        raise ValueError(f"Not supported '{args.model_type}'")
     logger.warning(f"YOU ARE USING MODEL {type(model).__name__}")
 
     result = dict()
     for model_path in model_list:
-        
+        set_seed(settings.seed)
         model.load_state_dict(torch.load(model_path, map_location=settings.device))
         logger.debug(f"load from `{model_path}`")
 

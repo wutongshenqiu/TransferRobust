@@ -48,7 +48,7 @@ for lambda in 0.01; do
         valid
 
         python -m exps.eval_robust_pwrn34 --model=${MODEL_PATH}/sntl_${POWER_ITER}_${NORM_BETA}_${FREEZE_BN_LAYER}_pwrn34_cifar10_${k}_${TEACHER_MODEL}-last -k=${k} \
-                --log=sntl.log --result-file=logs/sntl.json
+                --model-type=pwrn34 --log=sntl.log --result-file=logs/sntl.json
         valid
 
     done
