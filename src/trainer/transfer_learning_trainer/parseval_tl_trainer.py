@@ -9,7 +9,7 @@ from src.networks import SupportedAllModuleType
 from src.utils import logger
 
 
-class ParsevalTransferLearningTrainer(TransferLearningTrainer, ParsevalConstrainMixin,):
+class ParsevalTransferLearningTrainer(TransferLearningTrainer, ParsevalConstrainMixin):
 
     def __init__(self, beta: float, k: int, teacher_model_path: str,
                  model: SupportedAllModuleType, train_loader: DataLoader,

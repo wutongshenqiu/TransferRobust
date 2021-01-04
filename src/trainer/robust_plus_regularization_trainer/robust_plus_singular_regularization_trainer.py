@@ -27,7 +27,9 @@ class RobustPlusSingularRegularizationTrainer(ADVTrainer, InitializeTensorboardM
     def step_batch(self, inputs: torch.Tensor, labels: torch.Tensor):
         inputs, labels = inputs.to(self._device), labels.to(self._device)
 
+        self._freeze_all_layers()
         adv_inputs = self._gen_adv(inputs, labels)
+        self._unfreeze_all_layers()
         adv_outputs = self.model(adv_inputs)
         clean_outputs = self.model(inputs)
 
@@ -150,3 +152,15 @@ class RobustPlusSingularRegularizationTrainer(ADVTrainer, InitializeTensorboardM
     def _get_layer_inputs(self, layer, inputs, outputs):
         if self.model.training:
             self._hooked_features_list.append(inputs[0].clone())
+
+    def _unfreeze_all_layers(self):
+        for p in self.model.parameters():
+            p.requires_grad = True
+
+        logger.debug(f"all parameters of model are unfreezed")
+
+    def _freeze_all_layers(self):
+        for p in self.model.parameters():
+            p.requires_grad = False
+
+        logger.debug(f"all parameters of model are freezed")
