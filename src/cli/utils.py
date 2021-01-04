@@ -54,5 +54,7 @@ def get_test_dataset(dataset: str) -> DataLoader:
         return get_cifar_test_dataloader(dataset=dataset)
     elif dataset == 'mnist':
         return get_mnist_test_dataloader()
-    elif dataset == 'svhn':
-        return get_svhn_test_dataloader()
+    elif dataset.startswith('svhn'):
+        # 'svhn': using mean and std of 'svhn'
+        # 'svhn': using mean and std of 'cifar100'
+        return get_svhn_test_dataloader(dataset_norm_type=dataset)
