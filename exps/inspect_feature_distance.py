@@ -94,11 +94,21 @@ def hook_last_k_blocks(model, k):
         fh = ForwardHook(block)
         fh.hook()
         fhs[_k] = fh
+    
+
+    fhs[0] = ForwardHook(getattr(blocks, f"block{total_blocks}")[0])
+    fhs[0].hook()
 
     yield fhs
 
     for fh in fhs.values():
         fh.remove()
+
+def freeze_model_trainable_params(model:Module):
+    for param in model.parameters():
+        param.requires_grad = False
+    
+    logger.debug("all parameters are freezed")
 
 
 def get_model(model_type, output_label_num, k=None):
@@ -162,6 +172,10 @@ def exp(k, model_path=None, ds="cifar10", ds_type="train", model_type="wrn34", t
         #     "sntl_1_0.6_pwrn34_cifar10_8_cartl_wrn34_cifar100_8_0.01-best_robust-last",
         # ]
         model_name_list = [
+            f"sntl_1_0.6_True_pwrn34_cifar10_{k}_fm_fdm_wrn34_cifar100_{k}_0.01-last-last",
+
+            f"sntl_1_0.4_True_pwrn34_cifar10_{k}_cartl_wrn34_cifar100_{k}_0.01-best_robust-last",
+
             f"sntl_1_0.6_True_pwrn34_cifar10_{k}_cartl_wrn34_cifar100_{k}_0.01-best_robust-last",
 
             f"sntl_1_0.6_False_pwrn34_cifar10_{k}_at_wrn34_cifar100-best_robust-last",
@@ -179,6 +193,7 @@ def exp(k, model_path=None, ds="cifar10", ds_type="train", model_type="wrn34", t
         mp = os.path.join(settings.model_dir, model_name)
         model.load_state_dict(state_dict = torch.load(mp, map_location=DEVICE))
         model.eval()
+        freeze_model_trainable_params(model)
 
         attacker = LinfPGDAttack(model=model, **attack_params)
 
@@ -198,6 +213,16 @@ def exp(k, model_path=None, ds="cifar10", ds_type="train", model_type="wrn34", t
         k_adv_features_sum:Dict[int, Tensor] = { key:torch.tensor(0) for key in yield_last_k_range() }
 
         k_norms:Dict[int, List[np.ndarray]] = { key:[] for key in yield_last_k_range() }
+        k_clean_norms:Dict[int, List[np.ndarray]] = { key:[] for key in yield_last_k_range() }
+        k_adv_norms:Dict[int, List[np.ndarray]] = { key:[] for key in yield_last_k_range() }
+
+        k_clean_features_sum[0] = torch.tensor(0)
+        k_adv_features_sum[0] = torch.tensor(0)
+
+        k_norms[0] = []
+        k_clean_norms[0] = []
+        k_adv_norms[0] = []
+
 
         with hook_last_k_blocks(model, FREEZE_K) as fhs:
             for data, labels in dataloader:
@@ -216,6 +241,9 @@ def exp(k, model_path=None, ds="cifar10", ds_type="train", model_type="wrn34", t
                     assert _k in k_clean_features_sum
                     k_clean_features[_k] = fhs[_k].module_input[0]
                     k_clean_features_sum[_k] = k_clean_features[_k].sum(dim=0) + k_clean_features_sum[_k]
+                # get fc layer
+                k_clean_features[0] = fhs[0].module_output
+                k_clean_features_sum[0] = k_clean_features[0].sum(dim=0) + k_clean_features_sum[0]
                     
 
                 adv_data = attacker.calc_perturbation(data, labels)
@@ -230,6 +258,9 @@ def exp(k, model_path=None, ds="cifar10", ds_type="train", model_type="wrn34", t
                     assert _k in k_adv_features_sum
                     k_adv_features[_k] = fhs[_k].module_input[0]
                     k_adv_features_sum[_k] = k_adv_features[_k].sum(dim=0) + k_adv_features_sum[_k]
+                # get fc layer
+                k_adv_features[0] = fhs[0].module_output
+                k_adv_features_sum[0] = k_adv_features[0].sum(dim=0) + k_adv_features_sum[0]
 
                 for _k in yield_last_k_range():
                     scalar = torch.norm(
@@ -238,10 +269,27 @@ def exp(k, model_path=None, ds="cifar10", ds_type="train", model_type="wrn34", t
                         dim=1
                     ) #type:Tensor
 
+                    k_clean_norms[_k].append(torch.norm(k_clean_features[_k].view(k_clean_features[_k].shape[0], -1), p=2, dim=1).detach().cpu().numpy())
+                    k_adv_norms[_k].append(torch.norm(k_adv_features[_k].view(k_adv_features[_k].shape[0], -1), p=2, dim=1).detach().cpu().numpy())
                     k_norms[_k].append(scalar.detach().cpu().numpy())
+                # get fc layer
+                scalar = torch.norm(
+                    (k_adv_features[0] - k_clean_features[0]).view(k_clean_features[0].shape[0], -1),
+                    p=2,
+                    dim=1
+                ) #type:Tensor
+                k_clean_norms[0].append(torch.norm(k_clean_features[0].view(k_clean_features[0].shape[0], -1), p=2, dim=1).detach().cpu().numpy())
+                k_adv_norms[0].append(torch.norm(k_adv_features[0].view(k_adv_features[0].shape[0], -1), p=2, dim=1).detach().cpu().numpy())
+                k_norms[0].append(scalar.detach().cpu().numpy())
         
-        for _k in yield_last_k_range(): 
+        for _k in k_norms.keys():
             k_norms[_k] = np.concatenate(k_norms[_k])
+
+        for _k in k_clean_norms.keys():
+            k_clean_norms[_k] = np.concatenate(k_clean_norms[_k])
+        
+        for _k in k_adv_norms.keys():
+            k_adv_norms[_k] = np.concatenate(k_adv_norms[_k])
         
         import pickle
         import json
@@ -256,9 +304,12 @@ def exp(k, model_path=None, ds="cifar10", ds_type="train", model_type="wrn34", t
         with open(os.path.join(save_dir, "result.pkl"), "wb+") as f:
             pickle.dump(k_norms, f)
 
-        for _k in yield_last_k_range():
+        for _k in k_clean_features_sum.keys():
             k_clean_features_sum[_k] = (k_clean_features_sum[_k] / items).detach().cpu().numpy()
+
+        for _k in k_adv_features_sum.keys():
             k_adv_features_sum[_k] = (k_adv_features_sum[_k] / items).detach().cpu().numpy()
+        
         
         with open(os.path.join(save_dir, "clean_mean.pkl"), "wb+") as f:
             pickle.dump(k_clean_features_sum, f)
@@ -266,6 +317,11 @@ def exp(k, model_path=None, ds="cifar10", ds_type="train", model_type="wrn34", t
         with open(os.path.join(save_dir, "adv_mean.pkl"), "wb+") as f:
             pickle.dump(k_adv_features_sum, f)
         
+        with open(os.path.join(save_dir, "clean_norm.pkl"), "wb+") as f:
+            pickle.dump(k_clean_norms, f)
+        
+        with open(os.path.join(save_dir, "adv_norm.pkl"), "wb+") as f:
+            pickle.dump(k_adv_norms, f)  
         
 
 
