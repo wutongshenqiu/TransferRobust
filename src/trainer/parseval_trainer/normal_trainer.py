@@ -4,7 +4,7 @@ import torch
 from torch.utils.data import DataLoader
 
 from ..base_trainer import BaseTrainer
-from src.networks import WRN34Block
+from src.networks import WRNBlocks
 from src.utils import logger
 from .mixins import ParsevalConstrainMixin
 from src.networks import parseval_normal_wrn34_10, SupportedWideResnetType
@@ -20,7 +20,7 @@ class ParsevalNormalTrainer(BaseTrainer, ParsevalConstrainMixin):
             beta: retraction parameter
         """
         super().__init__(model, train_loader, test_loader, checkpoint_path)
-        self._blocks = WRN34Block(model)
+        self._blocks = WRNBlocks(model)
         self.gather_constrain_layers(17, ignore_first_conv=False)
 
         logger.debug(f"beta: {beta}")

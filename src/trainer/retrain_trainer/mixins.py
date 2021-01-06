@@ -3,13 +3,13 @@ from typing import Union
 from torch.nn import BatchNorm2d
 
 from src.utils import logger
-from src.networks import WRN34Block, Resnet18Block
+from src.networks import WRNBlocks, Resnet18Block
 from src.networks import SupportedAllModuleType
 
 
 class ResetBlockMixin:
     model: SupportedAllModuleType
-    _blocks: Union[WRN34Block, Resnet18Block]
+    _blocks: Union[WRNBlocks, Resnet18Block]
 
     def reset_and_unfreeze_last_k_blocks(self, k: int):
         """reset and unfreeze layers in last k blocks

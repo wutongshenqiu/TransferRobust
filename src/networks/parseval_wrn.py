@@ -48,6 +48,7 @@ class ParsevalBasicBlock(nn.Module):
 class ParsevalNetworkBlock(nn.Module):
     # record current residual block
     current_block: int = 0
+    total_blocks: int = 0
 
     def __init__(self, k: int, nb_layers, in_planes, out_planes, stride, dropRate=0.0):
         """
@@ -62,9 +63,7 @@ class ParsevalNetworkBlock(nn.Module):
         layers = []
         for i in range(int(nb_layers)):
             cls.current_block += 1
-            # use ParsevalBasicBlock for residual block that needs retraining
-            # 17 is the total block of wrn34
-            if cls.current_block + k > 17:
+            if cls.current_block + k > cls.total_blocks:
                 block = ParsevalBasicBlock
             else:
                 block = BasicBlock
@@ -73,6 +72,10 @@ class ParsevalNetworkBlock(nn.Module):
 
     def forward(self, x):
         return self.layer(x)
+
+    @classmethod
+    def set_total_blocks(cls, n_tb):
+        cls.total_blocks = n_tb
 
     @classmethod
     def reset_current_block(cls):
@@ -91,6 +94,8 @@ class ParsevalWideResNet(nn.Module):
         assert((depth - 4) % 6 == 0)
         n = (depth - 4) / 6
         block = BasicBlock
+        # set number of total blocks
+        ParsevalNetworkBlock.set_total_blocks(2 + n * 3)
         # 1st conv before any network block
         self.conv1 = nn.Conv2d(3, nChannels[0], kernel_size=3, stride=1,
                                padding=1, bias=False)

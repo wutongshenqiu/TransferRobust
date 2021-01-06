@@ -37,6 +37,48 @@ class WRN34Block:
         for i in range(1, 18):
             setattr(self, f"block{i}", self.get_block(i))
 
+class WRNBlocks:
+    """
+        Divide WRN into blocks. (WRN D-W: D = 4 + n * 6)
+             [conv 16]
+                |
+        [conv160, conv160] * n
+                |
+        [conv320, conv320] * n
+                |
+        [conv640, conv640] * n
+                |
+           [bn, avg_pool]
+                |
+              [fc]
+    """
+    def __init__(self, model: SupportedWideResnetType):
+        self._model = model
+        assert isinstance(model.block1.layer, torch.nn.Sequential)
+        self._n = len(model.block1.layer)
+        self._total_blocks = 3 * self._n + 2
+        self._set_block()
+    
+    def get_block(self, num: int):
+        # conv blocks
+        if 1 <= num <= (3 * self._n):
+            block_num, layer_num = divmod(num + self._n - 1, self._n)
+            return getattr(self._model, f"block{block_num}").layer[layer_num]
+        # the penultimate is 'bn' and 'relu' layer
+        elif num == self._total_blocks - 1:
+            return torch.nn.Sequential(self._model.bn1, self._model.relu)
+        # last block is 'fc' layer
+        elif num == self._total_blocks:
+            return torch.nn.Sequential(self._model.fc)
+        else:
+            raise ValueError(f"unexpected block number: {num}")
+    
+    def get_total_blocks(self) -> int:
+        return self._total_blocks
+
+    def _set_block(self):
+        for i in range(1, self._total_blocks + 1):
+            setattr(self, f"block{i}", self.get_block(i))
 
 class Resnet18Block:
     """divided resnet into 9 blocks
@@ -74,9 +116,9 @@ class Resnet18Block:
             setattr(self, f"block{i}", self.get_block(i))
 
 
-def make_blocks(model: SupportedAllModuleType) -> Union[WRN34Block, Resnet18Block]:
+def make_blocks(model: SupportedAllModuleType) -> Union[Resnet18Block, WRNBlocks]:
     if isinstance(model, WideResNet) or isinstance(model, ParsevalWideResNet):
-        return WRN34Block(model)
+        return WRNBlocks(model)
     elif isinstance(model, ResNet) or isinstance(model, ParsevalResNet):
         return Resnet18Block(model)
     else:
