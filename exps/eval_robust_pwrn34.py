@@ -142,7 +142,7 @@ if __name__ == '__main__':
         "epsilon": 8/255,
         "step_size": 2/255,
         "num_steps": 20,
-        "dataset_name": "cifar100",
+        "dataset_name": args.dataset,
     }
     
     if args.model is None:
