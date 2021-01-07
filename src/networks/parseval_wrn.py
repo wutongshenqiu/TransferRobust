@@ -139,6 +139,9 @@ def parseval_retrain_wrn34_10(k: int, num_classes=10):
     """
     return ParsevalWideResNet(k, 34, num_classes, 10, 0)
 
+def parseval_retrain_wrn28_10(k: int, num_classes=10):
+    return ParsevalWideResNet(k, 28, num_classes, 10, 0)
+
 
 def parseval_normal_wrn34_10(num_classes=10):
     return ParsevalWideResNet(17, 34, num_classes, 10, 0)
