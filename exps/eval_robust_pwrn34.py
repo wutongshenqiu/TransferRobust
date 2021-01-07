@@ -120,7 +120,7 @@ if __name__ == '__main__':
     from src.networks import parseval_retrain_wrn34_10, wrn34_10, resnet18
     from src.utils import (get_cifar_test_dataloader, get_cifar_train_dataloader, get_mnist_test_dataloader,
                         get_mnist_test_dataloader_one_channel)
-    from src.cli.utils import get_test_dataset
+    from src.cli.utils import get_test_dataset, get_model
 
     import time
     import json 
@@ -158,12 +158,7 @@ if __name__ == '__main__':
         logger.change_log_file(settings.log_dir / args.log)
 
     test_loader = get_test_dataset(args.dataset)
-    if args.model_type == "pwrn34":
-        model = parseval_retrain_wrn34_10(k=args.k, num_classes=args.num_classes)
-    elif args.model_type == "wrn34":
-        model = wrn34_10(num_classes=args.num_classes)
-    else:
-        raise ValueError(f"Not supported '{args.model_type}'")
+    model = get_model(model=args.model_type, k=args.k, num_classes=args.num_classes)
     logger.warning(f"YOU ARE USING MODEL {type(model).__name__}")
 
     result = dict()
