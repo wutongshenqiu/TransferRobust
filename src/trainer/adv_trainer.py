@@ -117,13 +117,13 @@ class ADVTrainer(BaseADVTrainer):
         for p in self.model.parameters():
             p.requires_grad = True
 
-        logger.debug(f"all parameters of model are unfreezed")
+        # logger.debug(f"all parameters of model are unfreezed")
 
     def _freeze_all_layers(self):
         for p in self.model.parameters():
             p.requires_grad = False
 
-        logger.debug(f"all parameters of model are freezed")
+        # logger.debug(f"all parameters of model are freezed")
 
 
 # fixme

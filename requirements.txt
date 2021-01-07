@@ -60,3 +60,5 @@ Werkzeug==1.0.1
 wheel==0.35.1
 wincertstore==0.2
 zipp==3.4.0
+autoattack==0.1
+foolbox==3.2.1
