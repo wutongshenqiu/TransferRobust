@@ -145,4 +145,9 @@ trained_models/
 logs/
 checkpoint/
 runs/
+<<<<<<< HEAD
 old_models/
+=======
+.vscode
+misc_results
+>>>>>>> bdbc2b785c1a2530fcccd3ccce0f174a7ba2b2ba

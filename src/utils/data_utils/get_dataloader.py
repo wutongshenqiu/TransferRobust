@@ -48,6 +48,11 @@ def get_mean_and_std(dataset: str) -> Tuple[Tuple, Tuple]:
         logger.debug(f"get mean and std of svhn")
         mean = SVHN_TRAIN_MEAN
         std = SVHN_TRAIN_STD
+    elif dataset == "svhntl":
+        # logger.debug(f"get mean and std of cifar10")
+        logger.warning("Using mean and std of cifar100 for dataset svhn!")
+        mean = CIFAR100_TRAIN_MEAN
+        std = CIFAR100_TRAIN_STD
     else:
         raise ValueError(f'dataset "{dataset}" is not supported!')
 
@@ -205,12 +210,12 @@ def get_mnist_train_dataloader_one_channel(batch_size=settings.batch_size, num_w
 
 
 def get_svhn_train_dataloder(batch_size=settings.batch_size, num_workers=settings.num_worker,
-                             shuffle=True, normalize=True):
+                             shuffle=True, normalize=True, dataset_norm_type="svhn"):
     compose_list = [
         transforms.ToTensor(),
     ]
     if normalize:
-        mean, std = get_mean_and_std("svhn")
+        mean, std = get_mean_and_std(dataset_norm_type)
         compose_list.append(transforms.Normalize(mean, std))
     transform = transforms.Compose(compose_list)
 
@@ -222,12 +227,12 @@ def get_svhn_train_dataloder(batch_size=settings.batch_size, num_workers=setting
 
 
 def get_svhn_test_dataloader(batch_size=settings.batch_size, num_workers=settings.num_worker,
-                             shuffle=False, normalize=True):
+                             shuffle=False, normalize=True, dataset_norm_type="svhn"):
     compose_list = [
         transforms.ToTensor(),
     ]
     if normalize:
-        mean, std = get_mean_and_std("svhn")
+        mean, std = get_mean_and_std(dataset_norm_type)
         compose_list.append(transforms.Normalize(mean, std))
     transform = transforms.Compose(compose_list)
 

@@ -1,2 +1,3 @@
 from .robust_plus_singular_regularization_trainer import RobustPlusSingularRegularizationTrainer
 from .robust_plus_all_regularization_trainer import RobustPlusAllRegularizationTrainer
+from .robust_plus_fm_trainer import RobustPlusFeatureMatchingTrainer
