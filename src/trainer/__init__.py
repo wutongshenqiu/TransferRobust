@@ -6,5 +6,6 @@ from .transfer_learning_trainer import (TransferLearningTrainer, ParsevalTransfe
 from .retrain_trainer import RetrainTrainer
 from .robust_plus_regularization_trainer import (RobustPlusAllRegularizationTrainer,
                                                  RobustPlusSingularRegularizationTrainer,
-                                                 RobustPlusFeatureMatchingTrainer)
+                                                 RobustPlusFeatureMatchingTrainer,
+                                                 RobustPlusSpectrumNormTrainer)
 from .parseval_trainer import ParsevalRetrainTrainer, ParsevalNormalTrainer
