@@ -21,6 +21,10 @@
   <component name="ChangeListManager">
     <list default="true" id="b25ca8f6-c0ea-4a12-bf02-b71fd1adcf5c" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+<<<<<<< HEAD
+=======
+      <change beforePath="$PROJECT_DIR$/src/trainer/retrain_trainer/mixins.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/trainer/retrain_trainer/mixins.py" afterDir="false" />
+>>>>>>> 4621c732483e38ab2cb066fdc668b7114b27aae3
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -105,11 +109,15 @@
       <workItem from="1608170902770" duration="14000" />
       <workItem from="1608865102682" duration="781000" />
       <workItem from="1608894345876" duration="996000" />
+<<<<<<< HEAD
       <workItem from="1608900187234" duration="5695000" />
       <workItem from="1608996979046" duration="275000" />
       <workItem from="1609601248002" duration="168000" />
       <workItem from="1609601495124" duration="2236000" />
       <workItem from="1609931413187" duration="28000" />
+=======
+      <workItem from="1608900187234" duration="5080000" />
+>>>>>>> 4621c732483e38ab2cb066fdc668b7114b27aae3
     </task>
     <servers />
   </component>

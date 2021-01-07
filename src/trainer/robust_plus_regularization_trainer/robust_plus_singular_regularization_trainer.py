@@ -152,15 +152,3 @@ class RobustPlusSingularRegularizationTrainer(ADVTrainer, InitializeTensorboardM
     def _get_layer_inputs(self, layer, inputs, outputs):
         if self.model.training:
             self._hooked_features_list.append(inputs[0].clone())
-
-    def _unfreeze_all_layers(self):
-        for p in self.model.parameters():
-            p.requires_grad = True
-
-        logger.debug(f"all parameters of model are unfreezed")
-
-    def _freeze_all_layers(self):
-        for p in self.model.parameters():
-            p.requires_grad = False
-
-        logger.debug(f"all parameters of model are freezed")

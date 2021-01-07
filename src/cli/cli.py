@@ -134,7 +134,7 @@ def lwf(model, num_classes, dataset, lambda_, teacher):
               help="filename of teacher model")
 def ptl(model, num_classes, dataset, beta, k, teacher):
     """parseval transform learning"""
-    save_name = f"ptl_{model}_{dataset}_{beta}_{k}_from_{teacher}"
+    save_name = f"bn_freeze_ptl_{model}_{dataset}_{beta}_{k}_from_{teacher}"
     logger.change_log_file(f"{settings.log_dir / save_name}.log")
 
     trainer = ParsevalTransferLearningTrainer(

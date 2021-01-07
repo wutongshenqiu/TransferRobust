@@ -64,11 +64,6 @@ class ResetBlockMixin:
             for p in block.parameters():
                 p.requires_grad = True
 
-        logger.debug("trainable layers")
-        for name, param in self.model.named_parameters():
-            if param.requires_grad:
-                logger.debug(f"name: {name}, size: {param.size()}")
-
 
 class FreezeModelMixin:
     """freeze all parameters of model"""

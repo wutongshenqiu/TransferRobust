@@ -88,7 +88,10 @@ class ADVTrainer(BaseADVTrainer):
     def step_batch(self, inputs: torch.Tensor, labels: torch.Tensor):
         inputs, labels = inputs.to(self._device), labels.to(self._device)
 
+        self._freeze_all_layers()
         adv_inputs = self._gen_adv(inputs, labels)
+        self._unfreeze_all_layers()
+        
         outputs = self.model(adv_inputs)
         loss = self.criterion(outputs, labels)
         self.optimizer.zero_grad()
@@ -109,6 +112,18 @@ class ADVTrainer(BaseADVTrainer):
         self.model.train()
 
         return adv_inputs
+    
+    def _unfreeze_all_layers(self):
+        for p in self.model.parameters():
+            p.requires_grad = True
+
+        logger.debug(f"all parameters of model are unfreezed")
+
+    def _freeze_all_layers(self):
+        for p in self.model.parameters():
+            p.requires_grad = False
+
+        logger.debug(f"all parameters of model are freezed")
 
 
 # fixme
