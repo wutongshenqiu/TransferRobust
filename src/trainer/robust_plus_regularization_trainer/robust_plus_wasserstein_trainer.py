@@ -60,10 +60,12 @@ class RobustPlusWassersteinTrainer(ADVTrainer, InitializeTensorboardMixin):
         self.summary_writer = self.init_writer()
 
         if torch.cuda.device_count() <= 1:
+            self._is_parallelism = False
             logger.warning("only one gpu is detected, CUDA may be out of memory!")
         else:
             self.model = nn.DataParallel(self.model)
             self._estimator = nn.DataParallel(self._estimator)
+            self._is_parallelism = True
 
         self._is_initialized = True
         if checkpoint_path:
@@ -93,9 +95,12 @@ class RobustPlusWassersteinTrainer(ADVTrainer, InitializeTensorboardMixin):
         # gather all intermediate features to first card (settings.device)
         features = torch.cat([self._features[i].to(settings.device) for i in range(torch.cuda.device_count())], dim=0)
 
-        we =  self._estimator(features)
+        # Wasserstein Distance Estimation
+        we = self._estimator(features)
+        adv_we, clean_we = we[:batch_size], we[batch_size:]
+        
         # Wasserstein Distance
-        loss_E = (torch.mean(we[batch_size:]) - torch.mean(we[:batch_size])) * self._lambda
+        loss_E = - (torch.mean(clean_we) - torch.mean(adv_we)) * self._lambda
         # JS Divergence
         # loss_E = torch.mean(torch.log(we[batch_size:]) - torch.log(1 - we[:batch_size]))
 
@@ -109,8 +114,8 @@ class RobustPlusWassersteinTrainer(ADVTrainer, InitializeTensorboardMixin):
         critic = self._estimator(features)
 
         # Wasserstein Distance
-        loss_C = torch.mean(critic) * self._lambda
-        loss_M = self.criterion(logits, labels) - loss_C #type:torch.Tensor
+        loss_C = - torch.mean(critic) * self._lambda
+        loss_M = self.criterion(logits, labels) + loss_C #type:torch.Tensor
         # JS Divergence
         # loss_M = self.criterion(logits, labels) - torch.mean(torch.log(critic)) #type:torch.Tensor
 
@@ -183,7 +188,7 @@ class RobustPlusWassersteinTrainer(ADVTrainer, InitializeTensorboardMixin):
                         self.summary_writer.add_scalar("best robustness", average_robust_accuracy, ep)
 
                     logger.info(
-                        f"epoch: {ep}   loss: {average_train_loss:.6f}  estimator loss {average_estimator_loss:.6f}   critic loss {average_critic_loss:.6f}"
+                        f"epoch: {ep}   loss: {average_train_loss:.6f}  estimator loss {average_estimator_loss:.6f}   critic loss {average_critic_loss:.6f}   "
                         f"train accuracy: {average_train_accuracy}   "
                         f"test accuracy: {acc}   robust accuracy: {average_robust_accuracy}   "
                         f"time: {epoch_cost_time:.2f}s")
@@ -252,7 +257,12 @@ class RobustPlusWassersteinTrainer(ADVTrainer, InitializeTensorboardMixin):
     
     # stuffs for checkpoint
     def _save_checkpoint(self, current_epoch, best_acc):
-        model_weights = self.model.state_dict()
+        if self._is_parallelism:
+            model_weights = self.model.module.state_dict()
+            estimator_weight = self._estimator.module.state_dict()
+        else:
+            model_weights = self.model.state_dict()
+            estimator_weight = self._estimator.state_dict()
         optimizer = self.optimizer.state_dict()
 
         torch.save({
@@ -260,7 +270,7 @@ class RobustPlusWassersteinTrainer(ADVTrainer, InitializeTensorboardMixin):
             "optimizer": optimizer,
             "current_epoch": current_epoch,
             "best_acc": best_acc,
-            "estimator": self._estimator.state_dict()
+            "estimator_weights": estimator_weight
         }, f"{self._checkpoint_path}")
 
         # Added by imTyrant
@@ -273,11 +283,16 @@ class RobustPlusWassersteinTrainer(ADVTrainer, InitializeTensorboardMixin):
     def _load_from_checkpoint(self, checkpoint_path: str) -> None:
         logger.warning("trainer that needed reset blocks may not support load from checkpoint!")
         checkpoint = torch.load(checkpoint_path)
-        self.model.load_state_dict(checkpoint.get("model_weights"))
         self.optimizer.load_state_dict(checkpoint.get("optimizer"))
-        self._estimator.load_state_dict(checkpoint.get("estimator"))
         start_epoch = checkpoint.get("current_epoch") + 1
         best_acc = checkpoint.get("best_acc")
+
+        if self._is_parallelism:
+            self.model.module.load_state_dict(checkpoint.get("model_weights"))
+            self._estimator.module.load_state_dict(checkpoint.get("estimator"))
+        else:
+            self.model.load_state_dict(checkpoint.get("model_weights"))
+            self._estimator.load_state_dict(checkpoint.get("estimator"))
 
         self.start_epoch = start_epoch
         self.best_acc = best_acc
@@ -295,16 +310,8 @@ class RobustPlusWassersteinTrainer(ADVTrainer, InitializeTensorboardMixin):
             logger.warning(f"loaded random state from '{self._checkpoint_path}.rand'")
 
 
-    
-    def _load_from_checkpoint(self, checkpoint_path: str) -> None:
-        if not self._is_initialized:
-            logger.warning("We don't load checkpoint at this moment")
-            # here we give some fake data
-            self.start_epoch = 1
-            self.best_acc = 0
+    def _save_model(self, save_path: str):
+        if self._is_parallelism:
+            torch.save(self.model.module.state_dict(), save_path)
         else:
-            super()._load_from_checkpoint(checkpoint_path)
-
-
-        
-
+            torch.save(self.model.state_dict(), save_path)
