@@ -2,3 +2,4 @@ from .robust_plus_singular_regularization_trainer import RobustPlusSingularRegul
 from .robust_plus_all_regularization_trainer import RobustPlusAllRegularizationTrainer
 from .robust_plus_fm_trainer import RobustPlusFeatureMatchingTrainer
 from .robust_plus_lip_trainer import RobustPlusSpectrumNormTrainer
+from .robust_plus_wasserstein_trainer import RobustPlusWassersteinTrainer

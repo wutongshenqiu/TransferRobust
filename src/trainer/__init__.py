@@ -7,5 +7,6 @@ from .retrain_trainer import RetrainTrainer
 from .robust_plus_regularization_trainer import (RobustPlusAllRegularizationTrainer,
                                                  RobustPlusSingularRegularizationTrainer,
                                                  RobustPlusFeatureMatchingTrainer,
-                                                 RobustPlusSpectrumNormTrainer)
+                                                 RobustPlusSpectrumNormTrainer,
+                                                 RobustPlusWassersteinTrainer)
 from .parseval_trainer import ParsevalRetrainTrainer, ParsevalNormalTrainer
