@@ -43,6 +43,12 @@ class TransferLearningTrainer(NormalTrainer, ResetBlockMixin, FreezeModelMixin,
         # fixme
         # if re-initialize influence?
         self.unfreeze_last_k_blocks(k)
+        self.freeze_bn_layer()
+
+        logger.debug("trainable layers")
+        for name, param in self.model.named_parameters():
+            if param.requires_grad:
+                logger.debug(f"name: {name}, size: {param.size()}")
 
         self.summary_writer = self.init_writer()
 

@@ -145,5 +145,6 @@ trained_models/
 logs/
 checkpoint/
 runs/
+old_models/
 .vscode
 misc_results
