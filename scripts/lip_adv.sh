@@ -4,9 +4,14 @@ source scripts/utils.sh
 
 cuda $1
 
-python -m exps.lip_adv_train -m=wrn34 -n=100 -d=cifar100 --num-steps=7
+MODEL_ARCH=wrn34
+BETA_NORM=0.6
+NUM_CLASSES=100
+TRAINSET=cifar100
+
+python -m exps.lip_adv_train -m=${MODEL_ARCH} -n=${NUM_CLASSES} -d=${TRAINSET} --num-steps=7 --power-iter=1 --beta-norm=${BETA_NORM}
 valid $?
 
-python -m exps.eval_robust_pwrn34 --model=trained_models/snat_wrn34_cifar100_1_1.0-last -k=1 \
-                --model-type=wrn34 --dataset=cifar100 --log=snat.log --result-file=logs/snat.json  --num_classes=100
+python -m exps.eval_robust_pwrn34 --model=trained_models/snat_${MODEL_ARCH}_${TRAINSET}_1_${BETA_NORM}-last -k=1 \
+                --model-type=${MODEL_ARCH} --dataset=${TRAINSET} --log=snat.log --result-file=logs/snat.json  --num_classes=${NUM_CLASSES}
 valid $?
