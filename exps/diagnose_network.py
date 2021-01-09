@@ -1,6 +1,7 @@
 """
 Record inputs for last k blocks
 """
+from numpy.core.shape_base import block
 import torch
 import numpy as np
 import os
@@ -18,7 +19,7 @@ from typing import Tuple, List, Dict, Union
 
 
 class ForwardHook(object):
-    def __init__(self, module:Module):
+    def __init__(self, module:Module, func=None):
         super(ForwardHook).__init__()
 
         self._module_input:List[Tensor] = []
@@ -26,6 +27,11 @@ class ForwardHook(object):
         
         self.module = module
         self._module_handle = None
+        self._func = func
+    
+    @property
+    def want(self):
+        return self._func(self)
     
     @property
     def module_input(self)->List[Tensor]:
@@ -62,49 +68,30 @@ class ForwardHook(object):
         self._module_input = []
         self._module_output = None
 
-
-@contextlib.contextmanager
-def register_forward_hook_to_k_block(model, k):
-    blocks = make_blocks(model)
-    total_blocks = blocks.get_total_blocks()
-
-    wanted_block_name = f"block{total_blocks - k + 1}"
-    block = getattr(blocks, wanted_block_name)
-    if isinstance(block, torch.nn.Sequential):
-        block = block[0]
-    logger.info(f"get {wanted_block_name}")
-
-    fh = ForwardHook(block)
-    fh.hook()
-    yield fh
-    fh.remove()
-
 @contextlib.contextmanager 
-def hook_last_k_blocks(model, k):
+def hook_each_module(model:Module, k):
+    fhs = {} #type:Dict[int, ForwardHook]
     blocks = make_blocks(model)
     total_blocks = blocks.get_total_blocks()
 
-    fhs = {} #type:Dict[int, ForwardHook]
-    for _k in range(1, k+1):
+    idx = 0
+    for _k in range(k, 0, -1):
         wanted_block_name = f"block{total_blocks - _k + 1}"
         block = getattr(blocks, wanted_block_name)
-        if isinstance(block, torch.nn.Sequential):
-            block = block[0]
-        logger.info(f"get {wanted_block_name}:: {type(block)}")
-        
-        fh = ForwardHook(block)
-        fh.hook()
-        fhs[_k] = fh
 
-    fhs[0] = ForwardHook(getattr(blocks, f"block{total_blocks - 1}")[1]) # ReLU
-    fhs[0].hook()
+        for it, (name, module) in enumerate(list(block.named_modules())):
+            if isinstance(module, (torch.nn.Linear, torch.nn.BatchNorm2d)):
+                logger.info(f"get {wanted_block_name}::{name}")
+                fh = ForwardHook(module, func=lambda x:x.module_input[0])
+                fh.hook()
+                fhs[idx] = fh
+                idx += 1
 
-    logger.info(f"get block{total_blocks - 1}:: {type(fhs[0].module)}")
-
-    fhs[-1] = ForwardHook(getattr(blocks, f"block{total_blocks}")[0]) # fc
-    fhs[-1].hook()
-    logger.info(f"get block{total_blocks}:: {type(fhs[-1].module)}")
-
+                fh = ForwardHook(module, func=lambda x:x.module_output)
+                fh.hook()
+                fhs[idx] = fh
+                idx += 1
+    
     yield fhs
 
     for fh in fhs.values():
@@ -122,12 +109,8 @@ DEVICE = "cuda"
 
 FREEZE_K = 8
 
-def exp(k, model_path=None, ds="cifar10", ds_type="train", model_type="wrn34", trainset="cifar100"):
-    def yield_last_k_range(_k=None):
-        if _k is not None: yield _k
-        for _k in range(FREEZE_K, 0, -1):
-            yield _k
 
+def exp(k, model_path=None, ds="cifar10", ds_type="train", model_type="wrn34", trainset="cifar100"):
     logger.change_log_file(settings.log_dir / LOG_FILE)
 
     if ds_type == "train":
@@ -198,7 +181,7 @@ def exp(k, model_path=None, ds="cifar10", ds_type="train", model_type="wrn34", t
 
         attacker = LinfPGDAttack(model=model, **attack_params)
 
-        save_dir = f"misc_results/all_l2norm/{ds}_{ds_type}/{model_name}_last{FREEZE_K}"
+        save_dir = f"misc_results/all_l2norm/{ds}_{ds_type}/{model_name}_diag"
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
 
@@ -207,32 +190,17 @@ def exp(k, model_path=None, ds="cifar10", ds_type="train", model_type="wrn34", t
         acc = 0
         rob = 0
 
-        k_clean_features:Dict[int, Tensor] = { }
-        k_adv_features:Dict[int, Tensor] = { }
+        with hook_each_module(model, FREEZE_K) as fhs:
+            k_clean_features:Dict[int, Tensor] = { }
+            k_adv_features:Dict[int, Tensor] = { }
 
-        k_clean_features_sum:Dict[int, Tensor] = { key:torch.tensor(0) for key in yield_last_k_range() }
-        k_adv_features_sum:Dict[int, Tensor] = { key:torch.tensor(0) for key in yield_last_k_range() }
+            k_clean_features_sum:Dict[int, Tensor] = { key:torch.tensor(0) for key in fhs.keys() }
+            k_adv_features_sum:Dict[int, Tensor] = { key:torch.tensor(0) for key in fhs.keys() }
 
-        k_norms:Dict[int, List[np.ndarray]] = { key:[] for key in yield_last_k_range() }
-        k_clean_norms:Dict[int, List[np.ndarray]] = { key:[] for key in yield_last_k_range() }
-        k_adv_norms:Dict[int, List[np.ndarray]] = { key:[] for key in yield_last_k_range() }
+            k_norms:Dict[int, List[np.ndarray]] = { key:[] for key in fhs.keys() }
+            k_clean_norms:Dict[int, List[np.ndarray]] = { key:[] for key in fhs.keys() }
+            k_adv_norms:Dict[int, List[np.ndarray]] = { key:[] for key in fhs.keys() }
 
-        k_clean_features_sum[-1] = torch.tensor(0)
-        k_adv_features_sum[-1] = torch.tensor(0)
-
-        k_clean_features_sum[0] = torch.tensor(0)
-        k_adv_features_sum[0] = torch.tensor(0)
-
-        k_norms[-1] = []
-        k_clean_norms[-1] = []
-        k_adv_norms[-1] = []
-
-        k_norms[0] = []
-        k_clean_norms[0] = []
-        k_adv_norms[0] = []
-
-
-        with hook_last_k_blocks(model, FREEZE_K) as fhs:
             for data, labels in dataloader:
                 data = data.to(DEVICE)
                 labels = labels.to(DEVICE)
@@ -244,17 +212,11 @@ def exp(k, model_path=None, ds="cifar10", ds_type="train", model_type="wrn34", t
 
                 acc += pred.argmax(dim=1).eq(labels).sum().item()
 
-                for _k in yield_last_k_range():
+                for _k in fhs.keys():
                     assert _k in fhs
                     assert _k in k_clean_features_sum
-                    k_clean_features[_k] = fhs[_k].module_input[0]
+                    k_clean_features[_k] = fhs[_k].want
                     k_clean_features_sum[_k] = k_clean_features[_k].sum(dim=0) + k_clean_features_sum[_k]
-                # get ReLU layer
-                k_clean_features[0] = fhs[0].module_input[0]
-                k_clean_features_sum[0] = k_clean_features[0].sum(dim=0) + k_clean_features_sum[0]
-                # get fc layer
-                k_clean_features[-1] = fhs[-1].module_output
-                k_clean_features_sum[-1] = k_clean_features[-1].sum(dim=0) + k_clean_features_sum[-1]
 
                 adv_data = attacker.calc_perturbation(data, labels)
 
@@ -263,19 +225,13 @@ def exp(k, model_path=None, ds="cifar10", ds_type="train", model_type="wrn34", t
 
                 rob += pred.argmax(dim=1).eq(labels).sum().item()
                 
-                for _k in yield_last_k_range():
+                for _k in fhs.keys():
                     assert _k in fhs
                     assert _k in k_adv_features_sum
-                    k_adv_features[_k] = fhs[_k].module_input[0]
+                    k_adv_features[_k] = fhs[_k].want
                     k_adv_features_sum[_k] = k_adv_features[_k].sum(dim=0) + k_adv_features_sum[_k]
-                # get ReLU layer
-                k_adv_features[0] = fhs[0].module_input[0]
-                k_adv_features_sum[0] = k_adv_features[0].sum(dim=0) + k_adv_features_sum[0]
-                # get fc layer
-                k_adv_features[-1] = fhs[-1].module_output
-                k_adv_features_sum[-1] = k_adv_features[-1].sum(dim=0) + k_adv_features_sum[-1]
 
-                for _k in yield_last_k_range():
+                for _k in fhs.keys():
                     scalar = torch.norm(
                         (k_adv_features[_k] - k_clean_features[_k]).view(k_clean_features[_k].shape[0], -1),
                         p=2,
@@ -285,24 +241,6 @@ def exp(k, model_path=None, ds="cifar10", ds_type="train", model_type="wrn34", t
                     k_clean_norms[_k].append(torch.norm(k_clean_features[_k].view(k_clean_features[_k].shape[0], -1), p=2, dim=1).detach().cpu().numpy())
                     k_adv_norms[_k].append(torch.norm(k_adv_features[_k].view(k_adv_features[_k].shape[0], -1), p=2, dim=1).detach().cpu().numpy())
                     k_norms[_k].append(scalar.detach().cpu().numpy())
-                # get ReLU layer
-                scalar = torch.norm(
-                    (k_adv_features[0] - k_clean_features[0]).view(k_clean_features[0].shape[0], -1),
-                    p=2,
-                    dim=1
-                ) #type:Tensor
-                k_clean_norms[0].append(torch.norm(k_clean_features[0].view(k_clean_features[0].shape[0], -1), p=2, dim=1).detach().cpu().numpy())
-                k_adv_norms[0].append(torch.norm(k_adv_features[0].view(k_adv_features[0].shape[0], -1), p=2, dim=1).detach().cpu().numpy())
-                k_norms[0].append(scalar.detach().cpu().numpy())
-                # get fc layer
-                scalar = torch.norm(
-                    (k_adv_features[-1] - k_clean_features[-1]).view(k_clean_features[-1].shape[0], -1),
-                    p=2,
-                    dim=1
-                ) #type:Tensor
-                k_clean_norms[-1].append(torch.norm(k_clean_features[-1].view(k_clean_features[-1].shape[0], -1), p=2, dim=1).detach().cpu().numpy())
-                k_adv_norms[-1].append(torch.norm(k_adv_features[-1].view(k_adv_features[-1].shape[0], -1), p=2, dim=1).detach().cpu().numpy())
-                k_norms[-1].append(scalar.detach().cpu().numpy())
             
                 if items > 2000:
                     break
@@ -357,8 +295,6 @@ if __name__ == "__main__":
     parser.add_argument("-k", "--k", type=int, required=True)
     parser.add_argument("-m", "--model", type=str, default=None)
     parser.add_argument("--log", type=str, default=LOG_FILE)
-    parser.add_argument("--dataset", type=str, required=True)
-    parser.add_argument("--dataset-type", type=str, required="test")
     parser.add_argument("--model-type", type=str, default="wrn34")
     parser.add_argument("--trainset", type=str, default="cifar100")
     parser.add_argument("--freeze-k", type=int, default=FREEZE_K)
@@ -368,4 +304,4 @@ if __name__ == "__main__":
     LOG_FILE = args.log
     FREEZE_K = args.freeze_k
 
-    exp(k=args.k, model_path=args.model, ds=args.dataset, ds_type=args.dataset_type, model_type=args.model_type, trainset=args.trainset)
+    exp(k=args.k, model_path=args.model, ds="svhntl", ds_type="test", model_type=args.model_type, trainset=args.trainset)
