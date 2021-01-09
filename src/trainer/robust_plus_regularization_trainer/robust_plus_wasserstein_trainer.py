@@ -109,13 +109,15 @@ class RobustPlusWassersteinTrainer(ADVTrainer, InitializeTensorboardMixin):
         self._optimE.step()
 
         """update model"""
-        logits = self.model(adv_inputs)
+        logits = self.model(big_batch)
+        adv_logits = logits[:batch_size]
         features = torch.cat([self._features[i].to(settings.device).detach() for i in range(torch.cuda.device_count())], dim=0)
         critic = self._estimator(features)
+        adv_critic, clean_critic = critic[:batch_size], critic[batch_size:]
 
         # Wasserstein Distance
-        loss_C = - torch.mean(critic) * self._lambda
-        loss_M = self.criterion(logits, labels) + loss_C #type:torch.Tensor
+        loss_C =  (torch.mean(clean_critic) - torch.mean(adv_critic)) * self._lambda
+        loss_M = self.criterion(adv_logits, labels) + loss_C #type:torch.Tensor
         # JS Divergence
         # loss_M = self.criterion(logits, labels) - torch.mean(torch.log(critic)) #type:torch.Tensor
 
@@ -123,7 +125,7 @@ class RobustPlusWassersteinTrainer(ADVTrainer, InitializeTensorboardMixin):
         loss_M.backward()
         self.optimizer.step()
 
-        batch_robust_acc = logits.argmax(dim=1).eq(labels).sum().item()
+        batch_robust_acc = adv_logits.argmax(dim=1).eq(labels).sum().item()
         self._robust_acc += batch_robust_acc
 
             # print("E loss", loss_E, "M loss", loss_M, "critic", torch.mean(critic), "acc", batch_robust_acc)
@@ -281,33 +283,39 @@ class RobustPlusWassersteinTrainer(ADVTrainer, InitializeTensorboardMixin):
             logger.debug(f"random state is saved to '{self._checkpoint_path}.rand'")
     
     def _load_from_checkpoint(self, checkpoint_path: str) -> None:
-        logger.warning("trainer that needed reset blocks may not support load from checkpoint!")
-        checkpoint = torch.load(checkpoint_path)
-        self.optimizer.load_state_dict(checkpoint.get("optimizer"))
-        start_epoch = checkpoint.get("current_epoch") + 1
-        best_acc = checkpoint.get("best_acc")
-
-        if self._is_parallelism:
-            self.model.module.load_state_dict(checkpoint.get("model_weights"))
-            self._estimator.module.load_state_dict(checkpoint.get("estimator"))
+        if not self._is_initialized:
+            logger.warning("We don't load checkpoint at this moment")
+            # here we give some fake data
+            self.start_epoch = 1
+            self.best_acc = 0
         else:
-            self.model.load_state_dict(checkpoint.get("model_weights"))
-            self._estimator.load_state_dict(checkpoint.get("estimator"))
+            logger.warning("trainer that needed reset blocks may not support load from checkpoint!")
+            checkpoint = torch.load(checkpoint_path)
+            self.optimizer.load_state_dict(checkpoint.get("optimizer"))
+            start_epoch = checkpoint.get("current_epoch") + 1
+            best_acc = checkpoint.get("best_acc")
 
-        self.start_epoch = start_epoch
-        self.best_acc = best_acc
+            if self._is_parallelism:
+                self.model.module.load_state_dict(checkpoint.get("model_weights"))
+                self._estimator.module.load_state_dict(checkpoint.get("estimator_weights"))
+            else:
+                self.model.load_state_dict(checkpoint.get("model_weights"))
+                self._estimator.load_state_dict(checkpoint.get("estimator"))
 
-        # Added by imTyrant
-        # For loading and setting random state.
-        if hasattr(settings, "save_rand_state") and settings.save_rand_state:
-            from src.utils import RandStateSnapshooter
-            import os
-            
-            if not os.path.exists(f"{self._checkpoint_path}.rand"):
-                return
+            self.start_epoch = start_epoch
+            self.best_acc = best_acc
 
-            RandStateSnapshooter.lazy_set(f"{self._checkpoint_path}.rand")
-            logger.warning(f"loaded random state from '{self._checkpoint_path}.rand'")
+            # Added by imTyrant
+            # For loading and setting random state.
+            if hasattr(settings, "save_rand_state") and settings.save_rand_state:
+                from src.utils import RandStateSnapshooter
+                import os
+                
+                if not os.path.exists(f"{self._checkpoint_path}.rand"):
+                    return
+
+                RandStateSnapshooter.lazy_set(f"{self._checkpoint_path}.rand")
+                logger.warning(f"loaded random state from '{self._checkpoint_path}.rand'")
 
 
     def _save_model(self, save_path: str):

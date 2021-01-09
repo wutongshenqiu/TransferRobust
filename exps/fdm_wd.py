@@ -12,7 +12,7 @@ from src.utils import get_cifar_test_dataloader, get_cifar_train_dataloader
 
 
 def wd_fdm(model, num_classes, _lambda, lr_estimator, dataset, k, random_init, epsilon, step_size, num_steps, pretrained=None):
-    save_name = f"wd_fdm_{model}_{dataset}_{k}_{_lambda}"
+    save_name = f"wd_fdm_{pretrained is not None}_{model}_{dataset}_{k}_{_lambda}"
     logger.change_log_file(f"{settings.log_dir / save_name}.log")
 
     params  = {
