@@ -1,3 +1,4 @@
+from src.utils.data_utils.get_dataloader import get_subset_cifar_train_dataloader
 from typing import Optional
 
 from torch.nn import Module
@@ -17,7 +18,9 @@ SupportParsevalModelList = ['pres18', 'pwrn34', 'pwrn28']
 SupportModelList = SupportNormalModelList + SupportParsevalModelList
 DefaultModel = 'res18'
 
-SupportDatasetList = ['cifar10', 'cifar100', 'mnist', 'svhn', 'svhntl']
+
+PartationDatasetList = ['cifar10(0.5)', 'cifar10(0.2)', 'cifar10(0.1)']
+SupportDatasetList = ['cifar10', 'cifar100', 'mnist', 'svhn', 'svhntl'] + PartationDatasetList
 DefaultDataset = 'mnist'
 
 
@@ -42,7 +45,12 @@ def get_train_dataset(dataset: str) -> DataLoader:
     if dataset not in SupportDatasetList:
         raise ValueError("dataset not supported")
     if dataset.startswith("cifar"):
-        return get_cifar_train_dataloader(dataset=dataset)
+        if dataset in set(['cifar10', 'cifar100']):
+            return get_cifar_train_dataloader(dataset=dataset)
+        else: # very ugly hack
+            import re
+            [_, ds, ratio,  _] = re.split(r"(\w*)\(([\d\.]*)\)", dataset)
+            return get_subset_cifar_train_dataloader(float(ratio), ds)
     elif dataset == 'mnist':
         return get_mnist_train_dataloader()
     elif dataset.startswith('svhn'):
@@ -55,7 +63,9 @@ def get_test_dataset(dataset: str) -> DataLoader:
     if dataset not in SupportDatasetList:
         raise ValueError("dataset not supported")
     if dataset.startswith("cifar"):
-        return get_cifar_test_dataloader(dataset=dataset)
+        import re # very ugly hack
+        [_, ds, _] = re.split("(cifar[\d]+).*", dataset)
+        return get_cifar_test_dataloader(dataset=ds)
     elif dataset == 'mnist':
         return get_mnist_test_dataloader()
     elif dataset.startswith('svhn'):
