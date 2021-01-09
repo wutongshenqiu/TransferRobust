@@ -98,3 +98,9 @@ settings = Settings(_env_file=ENV_PATH)
 if settings.reproducibility:
     set_seed(settings.seed)
 
+def config_epochs_num(num):
+    settings.train_epochs = num
+
+def config_milestones(milestones):
+    assert isinstance(milestones, List)
+    settings.milestones = milestones
