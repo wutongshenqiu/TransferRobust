@@ -158,9 +158,7 @@ class RobustPlusFeatureMatchingTrainer(ADVTrainer, InitializeTensorboardMixin):
     def _freeze_trainable_parameters(self):
         for p in self.model.parameters():
             p.requires_grad = False
-        logger.debug(f"all trainable parameters of model are freezed")
     
     def _unfreeze_trainable_parameters(self):
         for p in self.model.parameters():
             p.requires_grad = True
-        logger.debug(f"all trainable parameters of model are unfreezed")

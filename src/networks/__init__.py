@@ -1,8 +1,8 @@
 from typing import Union
 
-from .wrn import wrn34_10, WideResNet
+from .wrn import wrn34_10, wrn28_10, WideResNet
 from .lenet import LeNet
-from .parseval_wrn import (parseval_retrain_wrn34_10,
+from .parseval_wrn import (parseval_retrain_wrn28_10, parseval_retrain_wrn34_10,
                            parseval_normal_wrn34_10, ParsevalWideResNet)
 
 from .resnet import ResNet, resnet18
@@ -14,5 +14,5 @@ SupportedWideResnetType = Union[WideResNet, ParsevalWideResNet]
 SupportedResnetType = Union[ResNet, ParsevalResNet]
 SupportedAllModuleType = Union[SupportedWideResnetType, SupportedResnetType]
 
-from .utils import WRN34Block, Resnet18Block, make_blocks
+from .utils import Resnet18Block, make_blocks, WRNBlocks
 

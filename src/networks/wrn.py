@@ -100,3 +100,6 @@ class WideResNet(nn.Module):
 
 def wrn34_10(num_classes=10):
     return WideResNet(34, num_classes, 10, 0)
+
+def wrn28_10(num_classes=10):
+    return WideResNet(28, num_classes, 10, 0)

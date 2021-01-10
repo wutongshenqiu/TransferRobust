@@ -109,11 +109,19 @@ def accuracy(model, testset, device):
     logger.info(f"Accuracy: {acc/items}%")
     return acc/items
 
+def freeze_model_trainable_params(model:torch.nn.Module):
+    for param in model.parameters():
+        param.requires_grad = False
+    
+    logger.debug("all parameters are freezed")
+
 
 if __name__ == '__main__':
     from src.networks import parseval_retrain_wrn34_10, wrn34_10, resnet18
     from src.utils import (get_cifar_test_dataloader, get_cifar_train_dataloader, get_mnist_test_dataloader,
                         get_mnist_test_dataloader_one_channel)
+    from src.cli.utils import get_test_dataset, get_model
+
     import time
     import json 
     import argparse
@@ -121,6 +129,8 @@ if __name__ == '__main__':
 
     parser  = argparse.ArgumentParser()
     parser.add_argument("-m", "--model", type=str, default=None)
+    parser.add_argument("-d", "--dataset", type=str, required=True)
+    parser.add_argument("-n", "--num_classes", type=int, required=True)
     parser.add_argument("--model-type", type=str, required=True)
     parser.add_argument("-k", "--k", type=int, default=1)
     parser.add_argument("--log", type=str, default=None)
@@ -132,7 +142,7 @@ if __name__ == '__main__':
         "epsilon": 8/255,
         "step_size": 2/255,
         "num_steps": 20,
-        "dataset_name": "cifar100",
+        "dataset_name": args.dataset,
     }
     
     if args.model is None:
@@ -147,13 +157,8 @@ if __name__ == '__main__':
     else:
         logger.change_log_file(settings.log_dir / args.log)
 
-    test_loader = get_cifar_test_dataloader("cifar10")
-    if args.model_type == "pwrn34":
-        model = parseval_retrain_wrn34_10(k=args.k, num_classes=10)
-    elif args.model_type == "wrn34":
-        model = wrn34_10(num_classes=10)
-    else:
-        raise ValueError(f"Not supported '{args.model_type}'")
+    test_loader = get_test_dataset(args.dataset)
+    model = get_model(model=args.model_type, k=args.k, num_classes=args.num_classes)
     logger.warning(f"YOU ARE USING MODEL {type(model).__name__}")
 
     result = dict()
@@ -164,6 +169,7 @@ if __name__ == '__main__':
 
         model.to(settings.device)
         model.eval()
+        freeze_model_trainable_params(model)
 
         acc = accuracy(model, test_loader, settings.device)
 
