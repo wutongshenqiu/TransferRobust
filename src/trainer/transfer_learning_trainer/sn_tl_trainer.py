@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
-from typing import Tuple
+from typing import List, Tuple, Union
 
 from .tl_trainer import TransferLearningTrainer
 from src.networks import SupportedAllModuleType
@@ -19,7 +19,10 @@ from src.utils.spectral_norm import spectral_norm, remove_spectral_norm
 class SpectralNormTransferLearningTrainer(TransferLearningTrainer):
     def __init__(self, k: int, teacher_model_path: str,
                  model: SupportedAllModuleType, train_loader: DataLoader,
-                 test_loader: DataLoader, power_iter:int=1, norm_beta:float=1.0, freeze_bn:bool=False, checkpoint_path: str = None):
+                 test_loader: DataLoader, power_iter:int=1, norm_beta:float=1.0, 
+                freeze_bn:Union[bool, List[int], Tuple[int, int]]=False, reuse_statistic: bool=False, 
+                reuse_teacher_statistic:bool=False,
+                checkpoint_path: str = None):
 
         # Ugly Hack
         # For adapt 'BaseTrainer', since it loads checkpoint during init before layers add spectral norm
@@ -40,10 +43,43 @@ class SpectralNormTransferLearningTrainer(TransferLearningTrainer):
                 logger.warning("We load checkpoint here")
                 self._load_from_checkpoint(checkpoint_path)
         
-        # Freeze BatchNorm layers during fine-tuning
+        # freeze BatchNorm layers to be tuned
+        self._freeze_bn = freeze_bn
+        self._reuse_statistic = reuse_statistic
         if freeze_bn: 
-            logger.debug(f"Freezeing ALL BatchNorm Layers of the training model.")
-            self.freeze_bn_layer()
+            logger.info(f"freezing batch norm layers and paramerter are {freeze_bn}, {reuse_statistic}")
+            if isinstance(freeze_bn, bool):
+                # assume 'freeze_bn' === True
+                self._freeze_bn = None 
+            self.freeze_bn_layer(verbose=True, freezing_range=self._freeze_bn, reuse_statistic=self._reuse_statistic)
+        
+        # freeze BatchNorm layers of the teacher
+        self._reuse_teacher_statistic = reuse_teacher_statistic
+        if self._fine_tuned_block_cnt >= 1:
+            _total_blocks = self._blocks.get_total_blocks()
+            self.freeze_bn_layer(verbose=True, freezing_range=(1, _total_blocks - self._fine_tuned_block_cnt), reuse_statistic=self._reuse_teacher_statistic)
+        
+        logger.debug(f"*************** trainable param: ")
+        for name, param in self.model.named_parameters():
+            if param.requires_grad:
+                logger.debug(f"{name}")
+        
+        logger.debug(f"*************** BN in training mode: ")
+        for name, module in self.model.named_modules():
+            if isinstance(module, torch.nn.BatchNorm2d) and module.training:
+                logger.debug(f"{name}")
+
+
+    def step_batch(self, inputs: torch.Tensor, labels: torch.Tensor) -> Tuple[float, float]:
+        # If we want to reuse statistic of batch norm layer, we have to refreeze them, since 
+        # after model validation, model goes back to 'eval' mode.
+        if self._freeze_bn and self._reuse_statistic:
+            self.freeze_bn_layer(verbose=False, freezing_range=self._freeze_bn, reuse_statistic=self._reuse_statistic)
+        if self._reuse_teacher_statistic and self._fine_tuned_block_cnt >= 1:
+            _total_blocks = self._blocks.get_total_blocks()
+            self.freeze_bn_layer(verbose=False, freezing_range=(1, _total_blocks - self._fine_tuned_block_cnt), reuse_statistic=self._reuse_teacher_statistic)
+        
+        return super().step_batch(inputs, labels)
 
     
     def _apply_spectral_norm(self, k):

@@ -1,4 +1,7 @@
-from typing import Union
+from torch.nn.modules.module import Module
+from src.networks.utils import make_blocks
+from src.config import Settings
+from typing import List, Tuple, Union
 
 from torch.nn import BatchNorm2d
 
@@ -68,6 +71,7 @@ class ResetBlockMixin:
 class FreezeModelMixin:
     """freeze all parameters of model"""
     model: SupportedAllModuleType
+    _blocks: Union[Resnet18Block, WRNBlocks]
 
     def freeze_model(self):
         for p in self.model.parameters():
@@ -80,13 +84,66 @@ class FreezeModelMixin:
             p.requires_grad = True
 
         logger.debug(f"all parameters of model are unfreezed")
+    
+    def _freeze_bn_proc(self, layer:Module, reuse_statistic):
+        for p in layer.parameters():
+            p.requires_grad = False
+        if reuse_statistic:
+            layer.eval()
 
-    def freeze_bn_layer(self):
+
+    def freeze_bn_layer(self, verbose=True, freezing_range:Union[Tuple[int, int],None]=None, reuse_statistic=False):
+        """
+            verbose: print log.
+            freezing_range: indicating range where batch norm layer to be freezed.
+                            A tuple (start, end) or a list [1, 2, ..] can be provided.
+            reuse_statistic: using previous statistic (running_mean and running_var).
+        """
+        # Different from previous version, we would freezing batch norm layers in unit of block.
+        # Thus, layers which are NOT in the 'block k' are not considerred, e.g., self.conv1 for WRN 34-10.
+        # And WE ASSUME THOSE LATERS ARE NOT BATCH NORM LAYERS.
+        # -- imTyrant
+
         # difference between modules and parameters
         # https://blog.paperspace.com/pytorch-101-advanced/
-        for layer in self.model.modules():
-            if isinstance(layer, BatchNorm2d):
-                for p in layer.parameters():
-                    p.requires_grad = False
+        assert hasattr(self, "_blocks")
+        if isinstance(self._blocks, Resnet18Block):
+            # TODO hard...
+            logger.warning( "*" * 100 + 
+                            "\nResNet Detected."
+                            "\nIn current code, it is hard to freeze the batch norm layer in the 'self.conv1'."
+                            "\nI will manually freeze it!\n" +
+                            "*" * 100)
+            for layer in self.model.conv1.modules():
+                self._freeze_bn_proc(layer, reuse_statistic)
 
-        logger.debug("all batch norm layers are freezed")
+
+        if freezing_range is None:
+            freezing_range = list(range(1, self._blocks.get_total_blocks() + 1))
+        else:
+            assert (isinstance(freezing_range, tuple) and len(freezing_range) == 2) \
+                    or isinstance(freezing_range, list)
+            if isinstance(freezing_range, tuple):
+                if freezing_range[1] == -1:
+                    _upper_range = self._blocks.get_total_blocks()
+                else:
+                    _upper_range = min(self._blocks.get_total_blocks(), freezing_range[1])
+                _low_range = max(1, freezing_range[0])
+                freezing_range = list(range(_low_range, _upper_range + 1))
+            elif isinstance(freezing_range, list):
+                # TODO: efficiently check validity of each element
+                pass
+            else:
+                raise ValueError("'freezing_range' must be a two-element tuple or a list.")
+        
+        assert isinstance(freezing_range, list)
+        for bi in freezing_range:
+            block = getattr(self._blocks, f"block{bi}")
+            for layer in block.modules():
+                if isinstance(layer, BatchNorm2d):
+                    self._freeze_bn_proc(layer, reuse_statistic)
+                    
+        if verbose:
+            logger.debug(f"batch norm layers in block{freezing_range} are freezed")
+            if reuse_statistic:
+                logger.debug("also using teacher's running statistics")
