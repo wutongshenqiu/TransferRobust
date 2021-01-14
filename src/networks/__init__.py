@@ -5,7 +5,7 @@ from .lenet import LeNet
 from .parseval_wrn import (parseval_retrain_wrn28_10, parseval_retrain_wrn34_10,
                            parseval_normal_wrn34_10, ParsevalWideResNet)
 
-from .resnet import ResNet, resnet18
+from .resnet import ResNet, resnet18, resnet34
 from .parseval_resnet import ParsevalResNet, parseval_resnet18
 
 # todo
