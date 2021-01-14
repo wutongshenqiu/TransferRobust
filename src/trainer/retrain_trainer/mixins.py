@@ -6,13 +6,13 @@ from typing import List, Tuple, Union
 from torch.nn import BatchNorm2d
 
 from src.utils import logger
-from src.networks import WRNBlocks, Resnet18Block
+from src.networks import WRNBlocks, ResnetBlocks
 from src.networks import SupportedAllModuleType
 
 
 class ResetBlockMixin:
     model: SupportedAllModuleType
-    _blocks: Union[WRNBlocks, Resnet18Block]
+    _blocks: Union[WRNBlocks, ResnetBlocks]
 
     def reset_and_unfreeze_last_k_blocks(self, k: int):
         """reset and unfreeze layers in last k blocks
@@ -71,7 +71,7 @@ class ResetBlockMixin:
 class FreezeModelMixin:
     """freeze all parameters of model"""
     model: SupportedAllModuleType
-    _blocks: Union[Resnet18Block, WRNBlocks]
+    _blocks: Union[ResnetBlocks, WRNBlocks]
 
     def freeze_model(self):
         for p in self.model.parameters():

@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, List
 
 import torch
 
@@ -80,6 +80,44 @@ class WRNBlocks:
         for i in range(1, self._total_blocks + 1):
             setattr(self, f"block{i}", self.get_block(i))
 
+
+class ResnetBlocks:
+
+    def __init__(self, model: SupportedAllModuleType) -> None:
+        self.model = model
+        self._block_num_list = self.get_block_num_list()
+        # 1 indicates fc layer
+        self._total_blocks = sum(self._block_num_list) + 1
+
+        self._set_block_attr()
+
+    def get_block_num_list(self) -> List[int]:
+        block_num_list = []
+        for i in range(2, 6):
+            blocks = getattr(self.model, f"conv{i}_x")
+            block_num_list.append(len(blocks))
+
+        return block_num_list
+
+    def get_total_blocks(self) -> int:
+        return self._total_blocks
+
+    def get_block(self, num: int):
+        if 1 <= num < self._total_blocks:
+            for i in range(len(self._block_num_list)):
+                if num <= self._block_num_list[i]:
+                    return getattr(self.model, f"conv{i+2}_x")[num-1]
+                num -= self._block_num_list[i]
+        elif num == self.get_total_blocks():
+            return torch.nn.Sequential(self.model.fc)
+        else:
+            raise ValueError(f"unexpected block number: {num}")
+
+    def _set_block_attr(self):
+        for i in range(1, self._total_blocks+1):
+            setattr(self, f"block{i}", self.get_block(i))
+
+
 class Resnet18Block:
     """divided resnet into 9 blocks
 
@@ -116,11 +154,11 @@ class Resnet18Block:
             setattr(self, f"block{i}", self.get_block(i))
 
 
-def make_blocks(model: SupportedAllModuleType) -> Union[Resnet18Block, WRNBlocks]:
+def make_blocks(model: SupportedAllModuleType) -> Union[ResnetBlocks, WRNBlocks]:
     if isinstance(model, WideResNet) or isinstance(model, ParsevalWideResNet):
         return WRNBlocks(model)
     elif isinstance(model, ResNet) or isinstance(model, ParsevalResNet):
-        return Resnet18Block(model)
+        return ResnetBlocks(model)
     else:
         raise ValueError(f"model {type(model).__name__} is not supported to divide into blocks")
 

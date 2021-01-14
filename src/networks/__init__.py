@@ -14,5 +14,5 @@ SupportedWideResnetType = Union[WideResNet, ParsevalWideResNet]
 SupportedResnetType = Union[ResNet, ParsevalResNet]
 SupportedAllModuleType = Union[SupportedWideResnetType, SupportedResnetType]
 
-from .utils import Resnet18Block, make_blocks, WRNBlocks
+from .utils import ResnetBlocks, make_blocks, WRNBlocks
 
