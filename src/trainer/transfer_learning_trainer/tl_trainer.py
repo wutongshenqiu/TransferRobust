@@ -17,7 +17,7 @@ class TransferLearningTrainer(NormalTrainer, ResetBlockMixin, FreezeModelMixin,
 
     def __init__(self, k: int, teacher_model_path: str,
                  model: SupportedAllModuleType, train_loader: DataLoader,
-                 test_loader: DataLoader, checkpoint_path: str = None):
+                 test_loader: DataLoader, checkpoint_path: str = None, freeze_bn: bool = False):
         """we obey following ideas in `transform learning trainer`
 
         Ideas:
@@ -43,7 +43,8 @@ class TransferLearningTrainer(NormalTrainer, ResetBlockMixin, FreezeModelMixin,
         # fixme
         # if re-initialize influence?
         self.unfreeze_last_k_blocks(k)
-        self.freeze_bn_layer()
+        if freeze_bn:
+            self.freeze_bn_layer()
 
         logger.debug("trainable layers")
         for name, param in self.model.named_parameters():

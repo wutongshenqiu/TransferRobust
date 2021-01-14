@@ -11,8 +11,11 @@ from src.networks import wrn34_10
 from src.utils import get_cifar_test_dataloader, get_cifar_train_dataloader
 
 
-def wd_fdm(model, num_classes, _lambda, lr_estimator, dataset, k, random_init, epsilon, step_size, num_steps, pretrained=None):
-    save_name = f"wd_fdm_{pretrained is not None}_{model}_{dataset}_{k}_{_lambda}"
+def wd_fdm(model, num_classes, _lambda, lr_estimator, dataset, k, random_init, epsilon, step_size, num_steps, l2_lambda_, pretrained=None):
+    if l2_lambda_ == 0.0:
+        save_name = f"wd_fdm_{pretrained is not None}_{model}_{dataset}_{k}_{_lambda}"
+    else:
+        save_name = f"wd_fdm_{pretrained is not None}_{model}_{dataset}_{k}_{_lambda}_l2_{l2_lambda_}"
     logger.change_log_file(f"{settings.log_dir / save_name}.log")
 
     params  = {
@@ -36,7 +39,8 @@ def wd_fdm(model, num_classes, _lambda, lr_estimator, dataset, k, random_init, e
         params=params,
         checkpoint_path=f"{settings.checkpoint_dir / save_name}.pth",
         lr_estimator=lr_estimator,
-        lambda_=_lambda
+        lambda_=_lambda,
+        l2_lambda_=l2_lambda_,
     )
 
     trainer.train(f"{settings.model_dir / save_name}")
@@ -53,6 +57,7 @@ if __name__ == "__main__":
     parser.add_argument("--num-steps", type=int, default=7)
     parser.add_argument("-k", "--k", type=int, required=True)
     parser.add_argument("-l", "--lambda_", type=float, required=True)
+    parser.add_argument("--l2-lambda_", type=float, default=0)
     parser.add_argument("--random-init", action="store_false") #default value is True
     parser.add_argument("--pretrained", type=str, default=None)
     parser.add_argument("-lr-estimator", type=float, default=0.0001)
@@ -70,5 +75,6 @@ if __name__ == "__main__":
         epsilon=args.epsilon,
         step_size=args.step_size,
         num_steps=args.num_steps,
+        l2_lambda_=args.l2_lambda_,
         pretrained=args.pretrained
     )

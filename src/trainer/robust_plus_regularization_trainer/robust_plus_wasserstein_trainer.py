@@ -7,6 +7,7 @@ from torch.nn.modules.module import Module
 from torch.utils.data import DataLoader
 
 import numpy as np
+import math
 
 from ..adv_trainer import ADVTrainer
 from ..mixins import InitializeTensorboardMixin
@@ -37,13 +38,14 @@ class RobustPlusWassersteinTrainer(ADVTrainer, InitializeTensorboardMixin):
     _estimator:_Estimator
 
     def __init__(self, k: int, model: SupportedAllModuleType, train_loader: DataLoader,
-                 test_loader: DataLoader, attacker, params: Dict, checkpoint_path: str = None, lr_estimator:float=0.0001, lambda_: float=1.0, n_critic:int=1):
+                 test_loader: DataLoader, attacker, params: Dict, checkpoint_path: str = None, lr_estimator:float=0.0001, lambda_: float=1.0, l2_lambda_: float=0.0, n_critic:int=1):
 
         self._is_initialized = False
 
         super().__init__(model, train_loader, test_loader, attacker, params, checkpoint_path)
 
         self._lambda = lambda_
+        self._l2_lambda = l2_lambda_
         self._k = k
         self.n_critic = n_critic
 
@@ -109,17 +111,23 @@ class RobustPlusWassersteinTrainer(ADVTrainer, InitializeTensorboardMixin):
         self._optimE.step()
 
         """update model"""
-        logits = self.model(big_batch)
+        logits = self.model(big_batch) # type: torch.Tensor
+        clean_logits = logits[batch_size:]
         adv_logits = logits[:batch_size]
         features = torch.cat([self._features[i].to(settings.device).detach() for i in range(torch.cuda.device_count())], dim=0)
         critic = self._estimator(features)
         adv_critic, clean_critic = critic[:batch_size], critic[batch_size:]
 
+        # l2 distance
+        _feature_distacne = (clean_logits - adv_logits).view(batch_size, -1)
+        loss_L2 = self._l2_lambda * torch.norm(
+            _feature_distacne,
+            p=2,
+            dim=1
+        ).sum() / math.sqrt(_feature_distacne.shape[1]) # type: torch.Tensor
         # Wasserstein Distance
         loss_C =  (torch.mean(clean_critic) - torch.mean(adv_critic)) * self._lambda
-        loss_M = self.criterion(adv_logits, labels) + loss_C #type:torch.Tensor
-        # JS Divergence
-        # loss_M = self.criterion(logits, labels) - torch.mean(torch.log(critic)) #type:torch.Tensor
+        loss_M = self.criterion(adv_logits, labels) + loss_C + loss_L2 #type:torch.Tensor
 
         self.optimizer.zero_grad()
         loss_M.backward()
@@ -132,7 +140,7 @@ class RobustPlusWassersteinTrainer(ADVTrainer, InitializeTensorboardMixin):
 
         self._features.clear()
 
-        return loss_M.item(), loss_E.item(), loss_C.item(),  batch_robust_acc
+        return loss_M.item(), loss_E.item(), loss_C.item(), loss_L2.item(),  batch_robust_acc
     
     def train(self, save_path):
         batch_number = len(self._train_loader)
@@ -151,18 +159,23 @@ class RobustPlusWassersteinTrainer(ADVTrainer, InitializeTensorboardMixin):
 
             training_acc, running_loss = 0, .0
             estimator_loss, critic_loss = 0., 0.
+            l2_distance = 0.0
             # record current robustness
             self._robust_acc = 0
+
+            dataset_items = 0
 
             start_time = time.perf_counter()
 
             for index, data in enumerate(self._train_loader):
-                batch_running_loss, batch_estimator_loss, batch_critic_loss, batch_training_acc = self.step_batch(data[0], data[1], index)
+                dataset_items += data[1].shape[0]
+                batch_running_loss, batch_estimator_loss, batch_critic_loss, batch_l2_distance, batch_training_acc = self.step_batch(data[0], data[1], index)
 
                 training_acc += batch_training_acc
                 running_loss += batch_running_loss
                 estimator_loss += batch_estimator_loss
                 critic_loss += batch_critic_loss
+                l2_distance += batch_l2_distance
 
                 # warm up learning rate
                 if ep <= self._warm_up_epochs:
@@ -172,11 +185,15 @@ class RobustPlusWassersteinTrainer(ADVTrainer, InitializeTensorboardMixin):
                     end_time = time.perf_counter()
 
                     acc = self.test()
+
+                    average_train_accuracy = training_acc / dataset_items
+                    average_robust_accuracy = self._robust_acc / dataset_items
+
                     average_train_loss = (running_loss / batch_number)
-                    average_train_accuracy = training_acc / batch_number
-                    average_robust_accuracy = self._robust_acc / batch_number
                     average_estimator_loss = estimator_loss / batch_number
                     average_critic_loss = critic_loss / batch_number
+                    average_l2_distance = l2_distance / batch_number
+
                     epoch_cost_time = end_time - start_time
 
                     # write loss, time, test_acc, train_acc to tensorboard
@@ -184,13 +201,15 @@ class RobustPlusWassersteinTrainer(ADVTrainer, InitializeTensorboardMixin):
                         self.summary_writer.add_scalar("train loss", average_train_loss, ep)
                         self.summary_writer.add_scalar("estimator loss", average_estimator_loss, ep)
                         self.summary_writer.add_scalar("critic loss", average_critic_loss, ep)
+                        self.summary_writer.add_scalar("l2 loss", average_l2_distance, ep)
                         self.summary_writer.add_scalar("train accuracy", average_train_accuracy, ep)
                         self.summary_writer.add_scalar("test accuracy", acc, ep)
                         self.summary_writer.add_scalar("time per epoch", epoch_cost_time, ep)
                         self.summary_writer.add_scalar("best robustness", average_robust_accuracy, ep)
 
                     logger.info(
-                        f"epoch: {ep}   loss: {average_train_loss:.6f}  estimator loss {average_estimator_loss:.6f}   critic loss {average_critic_loss:.6f}   "
+                        f"epoch: {ep}   "
+                        f"loss: {average_train_loss:.6f}  estimator loss {average_estimator_loss:.6f}   critic loss {average_critic_loss:.6f}   l2 loss {average_l2_distance:.6f}   "
                         f"train accuracy: {average_train_accuracy}   "
                         f"test accuracy: {acc}   robust accuracy: {average_robust_accuracy}   "
                         f"time: {epoch_cost_time:.2f}s")

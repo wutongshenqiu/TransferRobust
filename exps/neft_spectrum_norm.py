@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, ValuesView
 
 from torch.nn import Module
 from torch.utils.data import DataLoader
@@ -16,11 +16,12 @@ from src.attack import LinfPGDAttack
 from src.cli.utils import get_train_dataset, get_test_dataset
 from src.cli.utils import get_model
 
-
-def sn_tl(model, num_classes, dataset, k, teacher, power_iter, norm_beta, freeze_bn):
+def sn_tl(model, num_classes, dataset, k, teacher, power_iter, norm_beta, freeze_bn, reuse_statistic, reuse_teacher_statistic):
     """transform leanring"""
+    from .utils import make_term
+    term = make_term(freeze_bn, reuse_statistic, reuse_teacher_statistic)
+    save_name = f"sntl_{power_iter}_{norm_beta}_{term}_{model}_{dataset}_{k}_{teacher}"
 
-    save_name = f"sntl_{power_iter}_{norm_beta}_{freeze_bn}_{model}_{dataset}_{k}_{teacher}"
     logger.change_log_file(f"{settings.log_dir / save_name}.log")
 
     trainer = SpectralNormTransferLearningTrainer(
@@ -33,13 +34,29 @@ def sn_tl(model, num_classes, dataset, k, teacher, power_iter, norm_beta, freeze
         power_iter=power_iter,
         norm_beta=norm_beta,
         freeze_bn=freeze_bn,
+        reuse_statistic=reuse_statistic,
+        reuse_teacher_statistic=reuse_teacher_statistic,
     )
 
     trainer.train(f"{settings.model_dir / save_name}")
 
 if __name__ == '__main__':
     import argparse
+    class FreezeBNAction(argparse.Action):
+        def __call__(self, parser, namespace, values, option_string=None):
+            if len(values) == 0:
+                freeze_bn = True
+            else:
+                if len(values) == 1:
+                    import re
+                    if re.match(r"\((\d+),(\d+)\)", values[0]) is None:
+                        raise ValueError("Assume you provide a tuple. please pass it in '(min, max)'.")
+                    [_, min_, max_, _] = re.split(r"\((\d+),(\d+)\)", values[0])
+                    freeze_bn = (int(min_), int(max_))
+                else:
+                    freeze_bn = list(map(lambda x: int(x), values))
 
+            setattr(namespace, self.dest, freeze_bn)
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-m", "--model", type=str)
@@ -49,9 +66,20 @@ if __name__ == '__main__':
     parser.add_argument("-t", "--teacher", type=str)
     parser.add_argument("--power-iter", type=int, default=1)
     parser.add_argument("--norm-beta", type=float, default=1.0)
-    parser.add_argument("--freeze-bn", action="store_true")
+    parser.add_argument("--freeze-bn", action=FreezeBNAction, nargs="*", default=False)
+    parser.add_argument("--reuse-statistic", action="store_true")
+    parser.add_argument("--reuse-teacher-statistic", action="store_true")
 
     args = parser.parse_args()
 
-    sn_tl(model=args.model, num_classes=args.num_classes, dataset=args.dataset, k=args.k, teacher=args.teacher, 
-            power_iter=args.power_iter, norm_beta=args.norm_beta, freeze_bn=args.freeze_bn)
+    sn_tl(model=args.model, 
+        num_classes=args.num_classes, 
+        dataset=args.dataset, 
+        k=args.k, 
+        teacher=args.teacher, 
+        power_iter=args.power_iter, 
+        norm_beta=args.norm_beta,
+        freeze_bn=args.freeze_bn, 
+        reuse_statistic=args.reuse_statistic, 
+        reuse_teacher_statistic=args.reuse_teacher_statistic
+    )
