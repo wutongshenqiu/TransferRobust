@@ -4,7 +4,7 @@ from typing import Optional
 from torch.nn import Module
 from torch.utils.data import DataLoader
 
-from src.networks import (resnet18, resnet34, wrn34_10, wrn28_10,
+from src.networks import (resnet18, resnet34, resnet50, wrn34_10, wrn28_10,
                           parseval_retrain_wrn28_10, parseval_retrain_wrn34_10, parseval_resnet18,
                           SupportedAllModuleType)
 
@@ -13,7 +13,7 @@ from src.utils import (get_cifar_test_dataloader, get_cifar_train_dataloader,
                        get_svhn_test_dataloader, get_svhn_train_dataloder)
 
 
-SupportNormalModelList = ['res18', 'res34', 'wrn34', 'wrn28']
+SupportNormalModelList = ['res18', 'res34', 'res50', 'wrn34', 'wrn28']
 SupportParsevalModelList = ['pres18', 'pwrn34', 'pwrn28']
 SupportModelList = SupportNormalModelList + SupportParsevalModelList
 DefaultModel = 'res18'
@@ -31,6 +31,8 @@ def get_model(model: str, num_classes: int, k: Optional[int] = None) -> Supporte
         return resnet18(num_classes=num_classes)
     elif model == "res34":
         return resnet34(num_classes=num_classes)
+    elif model == "res50":
+        return resnet50(num_classes=num_classes)
     elif model == 'pres18':
         return parseval_resnet18(k=k, num_classes=num_classes)
     elif model == 'wrn34':
