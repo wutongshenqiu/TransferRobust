@@ -9,6 +9,8 @@ from .data_utils import (
     get_mnist_test_dataloader_one_channel,
     get_svhn_test_dataloader,
     get_svhn_train_dataloder,
+    get_gtsrb_test_dataloder,
+    get_gtsrb_train_dataloder,
     clamp,
     evaluate_accuracy,
     WarmUpLR

@@ -146,5 +146,6 @@ logs/
 checkpoint/
 runs/
 old_models/
-.vscode
+.vscode/
 misc_results
+.idea/

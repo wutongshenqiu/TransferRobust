@@ -1,11 +1,17 @@
 """get subset of pytorch dataset"""
+from torchvision.datasets import VisionDataset
 
 from torch.utils.data import Dataset, DataLoader
 import torch
 from torch import Tensor
 
+import pandas as pd
+
+from PIL import Image
+
 from typing import Tuple, Dict, Any
 import math
+import os
 
 
 def calculate_categories_size(data_loader: DataLoader) -> Dict[int, int]:
@@ -91,3 +97,61 @@ class SubsetDataset(Dataset):
         if abs(number-math.ceil(number)) > threshold:
             return False
         return True
+
+
+class GTSRB(VisionDataset):
+
+    train_csv_path: str = "Train.csv"
+    test_csv_path: str = "Test.csv"
+
+    def __init__(self, root: str, *,
+                 train=True,
+                 transform=None,
+                 target_transform=None):
+        super(GTSRB, self).__init__(root, transform=transform,
+                                    target_transform=target_transform)
+
+        self.train = train
+
+        if self.train:
+            csv_file_path = self.train_csv_path
+        else:
+            csv_file_path = self.test_csv_path
+        csv_file_path = os.path.join(self.root, csv_file_path)
+
+        if not os.path.exists(csv_file_path):
+            raise ValueError(
+                f"gtsrb dataset not found at {self.root}, "
+                f"please download at `https://www.kaggle.com/meowmeowmeowmeowmeow/gtsrb-german-traffic-sign`"
+            )
+
+        self._csv_data = pd.read_csv(csv_file_path)
+
+        self._data = []
+        self._targets = []
+        self._prepare_data_and_targets()
+
+    def __len__(self):
+        return len(self._data)
+
+    def __getitem__(self, index):
+        img, target = self._data[index], self._targets[index]
+
+        if self.transform is not None:
+            img = self.transform(img)
+
+        if self.target_transform is not None:
+            target = self.target_transform(target)
+
+        return img, target
+
+    def _prepare_data_and_targets(self):
+        print(f"prepare gtsrb {'train' if self.train else 'test'} dataset")
+        for line in self._csv_data.iloc:
+            self._data.append(
+                Image.open(
+                    os.path.join(self.root, line[-1])
+                ).copy()
+            )
+
+            self._targets.append(line[-2])
