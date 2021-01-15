@@ -60,7 +60,13 @@ class RobustPlusSingularRegularizationTrainer(ADVTrainer, InitializeTensorboardM
         self._robust_acc += batch_robust_acc
         batch_running_loss = loss.item()
 
-        return batch_running_loss, batch_training_acc
+        adv_feature_l2_norm = torch.norm(
+            r_adv.view(r_adv.shape[0], -1),
+            dim=1,
+            p=2
+        ).mean().item()
+
+        return batch_running_loss, batch_training_acc, adv_feature_l2_norm
 
     def train(self, save_path):
         batch_number = len(self._train_loader)
@@ -78,16 +84,18 @@ class RobustPlusSingularRegularizationTrainer(ADVTrainer, InitializeTensorboardM
             logger.debug(f"lr: {self.current_lr}")
 
             training_acc, running_loss = 0, .0
+            adv_feature_l2_norm = .0
             # record current robustness
             self._robust_acc = 0
 
             start_time = time.perf_counter()
 
             for index, data in enumerate(self._train_loader):
-                batch_running_loss, batch_training_acc = self.step_batch(data[0], data[1])
+                batch_running_loss, batch_training_acc, batch_adv_feature_l2_norm = self.step_batch(data[0], data[1])
 
                 training_acc += batch_training_acc
                 running_loss += batch_running_loss
+                adv_feature_l2_norm += batch_adv_feature_l2_norm
 
                 # warm up learning rate
                 if ep <= self._warm_up_epochs:
@@ -100,6 +108,7 @@ class RobustPlusSingularRegularizationTrainer(ADVTrainer, InitializeTensorboardM
                     average_train_loss = (running_loss / batch_number)
                     average_train_accuracy = training_acc / batch_number
                     average_robust_accuracy = self._robust_acc / batch_number
+                    average_adv_feature_l2_norm = adv_feature_l2_norm / batch_number
                     epoch_cost_time = end_time - start_time
 
                     # write loss, time, test_acc, train_acc to tensorboard
@@ -109,11 +118,14 @@ class RobustPlusSingularRegularizationTrainer(ADVTrainer, InitializeTensorboardM
                         self.summary_writer.add_scalar("test accuracy", acc, ep)
                         self.summary_writer.add_scalar("time per epoch", epoch_cost_time, ep)
                         self.summary_writer.add_scalar("best robustness", average_robust_accuracy, ep)
+                        self.summary_writer.add_scalar("adv feature l2 norm", average_adv_feature_l2_norm, ep)
 
                     logger.info(
                         f"epoch: {ep}   loss: {average_train_loss:.6f}   train accuracy: {average_train_accuracy}   "
                         f"test accuracy: {acc}   robust accuracy: {average_robust_accuracy}   "
                         f"time: {epoch_cost_time:.2f}s")
+
+                    logger.info(average_adv_feature_l2_norm)
 
                     if best_robustness < average_robust_accuracy:
                         best_robustness = average_robust_accuracy

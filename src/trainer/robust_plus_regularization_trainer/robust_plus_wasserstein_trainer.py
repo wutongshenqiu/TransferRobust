@@ -126,8 +126,9 @@ class RobustPlusWassersteinTrainer(ADVTrainer, InitializeTensorboardMixin):
             dim=1
         ).sum() / math.sqrt(_feature_distacne.shape[1]) # type: torch.Tensor
         # Wasserstein Distance
-        loss_C =  (torch.mean(clean_critic) - torch.mean(adv_critic)) * self._lambda
-        loss_M = self.criterion(adv_logits, labels) + loss_C + loss_L2 #type:torch.Tensor
+        loss_C =  (torch.mean(clean_critic) - torch.mean(adv_critic))
+        loss_CE = self.criterion(adv_logits, labels)
+        loss_M = loss_CE + loss_C  * self._lambda #type:torch.Tensor
 
         self.optimizer.zero_grad()
         loss_M.backward()
@@ -219,6 +220,11 @@ class RobustPlusWassersteinTrainer(ADVTrainer, InitializeTensorboardMixin):
                         logger.info(f"better robustness: {best_robustness}")
                         logger.info(f"corresponding accuracy on test set: {acc}")
                         self._save_model(f"{save_path}-best_robust")
+
+                    # adjust lambda
+                    if running_loss / critic_loss > 2:
+                        self._lambda *= 0.5
+                        logger.info(f"lambda change to {self._lambda}")
 
             self._save_checkpoint(ep, best_robustness)
 

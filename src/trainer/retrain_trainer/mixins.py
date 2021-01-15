@@ -107,7 +107,7 @@ class FreezeModelMixin:
         # difference between modules and parameters
         # https://blog.paperspace.com/pytorch-101-advanced/
         assert hasattr(self, "_blocks")
-        if isinstance(self._blocks, Resnet18Block):
+        if isinstance(self._blocks, ResnetBlocks):
             # TODO hard...
             logger.warning( "*" * 100 + 
                             "\nResNet Detected."
