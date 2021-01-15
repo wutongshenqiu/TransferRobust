@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader
 
 from src import settings
 from ..logging_utils import logger
-from .dataset_utils import SubsetDataset
+from .dataset_utils import SubsetDataset, GTSRB
 
 DATA_DIR = "~/dataset"
 
@@ -25,6 +25,9 @@ MNIST_TRAIN_MEAN = (0.1307, 0.1307, 0.1307)
 
 SVHN_TRAIN_STD = (0.19803032, 0.20101574, 0.19703609)
 SVHN_TRAIN_MEAN = (0.4376817, 0.4437706, 0.4728039)
+
+GTSRB_TRAIN_MEAN = (0.3403, 0.3121, 0.3214)
+GTSRB_TRAIN_STD = (0.2724, 0.2608, 0.2669)
 
 
 def get_mean_and_std(dataset: str) -> Tuple[Tuple, Tuple]:
@@ -53,6 +56,10 @@ def get_mean_and_std(dataset: str) -> Tuple[Tuple, Tuple]:
         logger.warning("Using mean and std of cifar100 for dataset svhn!")
         mean = CIFAR100_TRAIN_MEAN
         std = CIFAR100_TRAIN_STD
+    elif dataset == "gtsrb":
+        logger.warning("Using mean and std of cifar1 for dataset gtsrb!")
+        mean = GTSRB_TRAIN_MEAN
+        std = GTSRB_TRAIN_STD
     else:
         raise ValueError(f'dataset "{dataset}" is not supported!')
 
@@ -238,6 +245,42 @@ def get_svhn_test_dataloader(batch_size=settings.batch_size, num_workers=setting
 
     test_data = torchvision.datasets.SVHN(root=os.path.join(DATA_DIR, "SVHN"), split="test",
                                           download=True, transform=transform)
+    test_loader = DataLoader(test_data, shuffle=shuffle, num_workers=num_workers, batch_size=batch_size)
+
+    return test_loader
+
+
+def get_gtsrb_train_dataloder(batch_size=settings.batch_size, num_workers=settings.num_worker,
+                              shuffle=True, normalize=True):
+    compose_list = [
+        transforms.Resize((32, 32)),
+        transforms.ToTensor()
+    ]
+    if normalize:
+        mean, std = get_mean_and_std("gtsrb")
+        compose_list.append(transforms.Normalize(mean, std))
+    transform = transforms.Compose(compose_list)
+
+    train_data = GTSRB(root=os.path.join(DATA_DIR, "GTSRB"),
+                       train=True, transform=transform)
+    train_loader = DataLoader(train_data, shuffle=shuffle, num_workers=num_workers, batch_size=batch_size)
+
+    return train_loader
+
+
+def get_gtsrb_test_dataloder(batch_size=settings.batch_size, num_workers=settings.num_worker,
+                             shuffle=False, normalize=True):
+    compose_list = [
+        transforms.Resize((32, 32)),
+        transforms.ToTensor()
+    ]
+    if normalize:
+        mean, std = get_mean_and_std("gtsrb")
+        compose_list.append(transforms.Normalize(mean, std))
+    transform = transforms.Compose(compose_list)
+
+    test_data = GTSRB(root=os.path.join(DATA_DIR, "GTSRB"),
+                      train=False, transform=transform)
     test_loader = DataLoader(test_data, shuffle=shuffle, num_workers=num_workers, batch_size=batch_size)
 
     return test_loader
