@@ -21,14 +21,20 @@ function valid () {
 }
 ###############################################
 
-TEACHER_MODEL=at_wrn34_cifar100-best_robust
+TEACHER_MODEL=at_wrn28\(4\)_cifar10-best_robust
+dataset=gtsrb
+model_arch=wrn28\(4\)
 
+lam=0.1
+num_classes=43
 
-for r in 0.5 0.2 0.1; do
+echo "#######################################################"
+echo "lwf transfer from ${TEACHER_MODEL}"
 
-    echo "#######################################################"
-    echo "lwf transfer from ${TEACHER_MODEL}"
+cli lwf -m ${model_arch} -n ${num_classes} -d ${dataset} -l ${lam} -t ${TEACHER_MODEL}
+valid $?
 
-    cli lwf -m wrn34 -n 10 -d cifar10\(${r}\) -l 0.1 -t ${TEACHER_MODEL}
-    valid
-done
+python -m exps.eval_robust_wrn34 --model=trained_models/lwf_${model_arch}_${dataset}_${lam}-best \
+        --log=lwf.log --result-file=logs/lwf.json --model-type=${model_arch} --dataset=${dataset} --num_classes=${num_classes}
+valid $?
+

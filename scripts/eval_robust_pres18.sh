@@ -8,6 +8,17 @@ MODEL_LIST=(
     "trained_models/sntl_1_0.4_False_pres18_mnist_5_at_res18_svhn-best_robust-last"
     "trained_models/sntl_1_0.4_True_pres18_mnist_3_at_res18_svhn-best_robust-last"
     "trained_models/sntl_1_0.4_False_pres18_mnist_3_at_res18_svhn-best_robust-last"
+    "trained_models/sntl_1_0.4_True_pres18_mnist_6_at_res18_svhn-best_robust-last"
+    "trained_models/sntl_1_0.4_False_pres18_mnist_6_at_res18_svhn-best_robust-last"
+
+    "trained_models/sntl_1_0.4_True_pres18_mnist_3_wd_fdm_True_res18_svhn_3_1.0-best_robust-last"
+    "trained_models/sntl_1_0.4_False_pres18_mnist_3_wd_fdm_True_res18_svhn_3_1.0-best_robust-last"
+    
+    "trained_models/sntl_1_0.4_True_pres18_mnist_5_wd_fdm_True_res18_svhn_5_1.0-best_robust-last"
+    "trained_models/sntl_1_0.4_False_pres18_mnist_5_wd_fdm_True_res18_svhn_5_1.0-best_robust-last"
+    
+    "trained_models/sntl_1_0.4_True_pres18_mnist_6_wd_fdm_True_res18_svhn_6_1.0-best_robust-last"
+    "trained_models/sntl_1_0.4_False_pres18_mnist_6_wd_fdm_True_res18_svhn_6_1.0-best_robust-last"
 )
 
 for model in ${MODEL_LIST[@]}; do

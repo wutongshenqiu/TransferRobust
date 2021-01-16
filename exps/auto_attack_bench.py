@@ -11,7 +11,7 @@ from src.utils import (logger, get_mean_and_std,
 from autoattack import AutoAttack
 
 
-EPSILON = 8/255
+EPSILON = 0.15
 
 SupportDatasetList = ['cifar10', 'cifar100', 'mnist', 'svhn', 'svhntl']
 def get_test_dataset(dataset: str, batch_size=256) -> DataLoader:
@@ -149,12 +149,21 @@ if __name__ == "__main__":
 
     if args.model is None:
         model_list = [
-            "trained_models/sntl_1_0.4_True_pwrn34_cifar10_8_at_wrn34_cifar100-best_robust-last",
-            "trained_models/sntl_1_0.6_False_pwrn34_cifar10_8_at_wrn34_cifar100-best_robust-last",
-            "trained_models/sntl_1_0.6_pwrn34_cifar10_8_cartl_wrn34_cifar100_8_0.01-best_robust-last",
-            "trained_models/sntl_1_0.6_True_pwrn34_cifar10_8_cartl_wrn34_cifar100_8_0.01-best_robust-last",
-            "trained_models/sntl_1_0.4_True_pwrn34_cifar10_8_cartl_wrn34_cifar100_8_0.01-best_robust-last",
-            "trained_models/sntl_1_0.6_True_pwrn34_cifar10_8_fm_fdm_wrn34_cifar100_8_0.01-last-last",
+            "trained_models/sntl_1_0.4_True_pres18_mnist_5_at_res18_svhn-best_robust-last",
+            "trained_models/sntl_1_0.4_False_pres18_mnist_5_at_res18_svhn-best_robust-last",
+            "trained_models/sntl_1_0.4_True_pres18_mnist_3_at_res18_svhn-best_robust-last",
+            "trained_models/sntl_1_0.4_False_pres18_mnist_3_at_res18_svhn-best_robust-last",
+            "trained_models/sntl_1_0.4_True_pres18_mnist_6_at_res18_svhn-best_robust-last",
+            "trained_models/sntl_1_0.4_False_pres18_mnist_6_at_res18_svhn-best_robust-last",
+
+            "trained_models/sntl_1_0.4_True_pres18_mnist_3_wd_fdm_True_res18_svhn_3_1.0-best_robust-last",
+            "trained_models/sntl_1_0.4_False_pres18_mnist_3_wd_fdm_True_res18_svhn_3_1.0-best_robust-last",
+            
+            "trained_models/sntl_1_0.4_True_pres18_mnist_5_wd_fdm_True_res18_svhn_5_1.0-best_robust-last",
+            "trained_models/sntl_1_0.4_False_pres18_mnist_5_wd_fdm_True_res18_svhn_5_1.0-best_robust-last",
+            
+            "trained_models/sntl_1_0.4_True_pres18_mnist_6_wd_fdm_True_res18_svhn_6_1.0-best_robust-last",
+            "trained_models/sntl_1_0.4_False_pres18_mnist_6_wd_fdm_True_res18_svhn_6_1.0-best_robust-last"
         ]
     else:
         model_list = [args.model] 

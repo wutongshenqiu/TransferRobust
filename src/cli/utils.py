@@ -10,7 +10,8 @@ from src.networks import (resnet18, resnet34, resnet50, wrn34_10, wrn28_10, wrn2
 
 from src.utils import (get_cifar_test_dataloader, get_cifar_train_dataloader,
                        get_mnist_test_dataloader, get_mnist_train_dataloader,
-                       get_svhn_test_dataloader, get_svhn_train_dataloder)
+                       get_svhn_test_dataloader, get_svhn_train_dataloder,
+                       get_gtsrb_test_dataloder, get_gtsrb_train_dataloder)
 
 
 SupportNormalModelList = ['res18', 'res34', 'res50', 'wrn34', 'wrn34(4)', 'wrn28', 'wrn28(4)']
@@ -20,7 +21,7 @@ DefaultModel = 'res18'
 
 
 PartationDatasetList = ['cifar10(0.5)', 'cifar10(0.2)', 'cifar10(0.1)']
-SupportDatasetList = ['cifar10', 'cifar100', 'mnist', 'svhn', 'svhntl'] + PartationDatasetList
+SupportDatasetList = ['cifar10', 'cifar100', 'mnist', 'svhn', 'svhntl', 'gtsrb'] + PartationDatasetList
 DefaultDataset = 'mnist'
 
 
@@ -65,6 +66,10 @@ def get_train_dataset(dataset: str) -> DataLoader:
         # 'svhn': using mean and std of 'svhn'
         # 'svhn': using mean and std of 'cifar100'
         return get_svhn_train_dataloder(dataset_norm_type=dataset)
+    elif dataset == "gtsrb":
+        return get_gtsrb_train_dataloder()
+    else:
+        raise ValueError(f"dataset `{dataset} is not supported`")
 
 
 def get_test_dataset(dataset: str) -> DataLoader:
@@ -80,3 +85,7 @@ def get_test_dataset(dataset: str) -> DataLoader:
         # 'svhn': using mean and std of 'svhn'
         # 'svhn': using mean and std of 'cifar100'
         return get_svhn_test_dataloader(dataset_norm_type=dataset)
+    elif dataset == "gtsrb":
+        return get_gtsrb_test_dataloder()
+    else:
+        raise ValueError(f"dataset `{dataset} is not supported`")
