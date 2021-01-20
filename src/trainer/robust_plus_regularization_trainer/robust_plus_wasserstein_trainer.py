@@ -96,6 +96,7 @@ class RobustPlusWassersteinTrainer(ADVTrainer, InitializeTensorboardMixin):
         ## update estimator ##
         # gather all intermediate features to first card (settings.device)
         features = torch.cat([self._features[i].to(settings.device) for i in range(torch.cuda.device_count())], dim=0)
+        # logger.debug(features)
 
         # Wasserstein Distance Estimation
         we = self._estimator(features)
@@ -104,17 +105,17 @@ class RobustPlusWassersteinTrainer(ADVTrainer, InitializeTensorboardMixin):
         # Wasserstein Distance
         loss_E = - (torch.mean(clean_we) - torch.mean(adv_we)) * self._lambda
         # JS Divergence
-        # loss_E = torch.mean(torch.log(we[batch_size:]) - torch.log(1 - we[:batch_size]))
 
         self._optimE.zero_grad()
         loss_E.backward()
         self._optimE.step()
 
+
         """update model"""
         logits = self.model(big_batch) # type: torch.Tensor
         clean_logits = logits[batch_size:]
         adv_logits = logits[:batch_size]
-        features = torch.cat([self._features[i].to(settings.device).detach() for i in range(torch.cuda.device_count())], dim=0)
+        features = torch.cat([self._features[i].to(settings.device) for i in range(torch.cuda.device_count())], dim=0)
         critic = self._estimator(features)
         adv_critic, clean_critic = critic[:batch_size], critic[batch_size:]
 
@@ -222,7 +223,7 @@ class RobustPlusWassersteinTrainer(ADVTrainer, InitializeTensorboardMixin):
                         self._save_model(f"{save_path}-best_robust")
 
                     # adjust lambda
-                    if running_loss / critic_loss > 2:
+                    if critic_loss / (running_loss - critic_loss * self._lambda)  > 1:
                         self._lambda *= 0.5
                         logger.info(f"lambda change to {self._lambda}")
 

@@ -5,8 +5,8 @@ from torch.nn import Module
 from torch.utils.data import DataLoader
 
 from src.networks import (resnet18, resnet34, resnet50, wrn34_10, wrn28_10, wrn28_4, wrn34_4,
-                          parseval_retrain_wrn28_10, parseval_retrain_wrn34_10, parseval_resnet18,
-                          SupportedAllModuleType)
+                          parseval_retrain_wrn28_10, parseval_retrain_wrn34_10, parseval_retrain_wrn28_4,
+                          parseval_resnet18, SupportedAllModuleType)
 
 from src.utils import (get_cifar_test_dataloader, get_cifar_train_dataloader,
                        get_mnist_test_dataloader, get_mnist_train_dataloader,
@@ -15,7 +15,7 @@ from src.utils import (get_cifar_test_dataloader, get_cifar_train_dataloader,
 
 
 SupportNormalModelList = ['res18', 'res34', 'res50', 'wrn34', 'wrn34(4)', 'wrn28', 'wrn28(4)']
-SupportParsevalModelList = ['pres18', 'pwrn34', 'pwrn28']
+SupportParsevalModelList = ['pres18', 'pwrn34', 'pwrn28', 'pwrn28(4)']
 SupportModelList = SupportNormalModelList + SupportParsevalModelList
 DefaultModel = 'res18'
 
@@ -48,6 +48,8 @@ def get_model(model: str, num_classes: int, k: Optional[int] = None) -> Supporte
         return wrn28_4(num_classes=num_classes)
     elif model == 'pwrn28':
         return parseval_retrain_wrn28_10(k=k, num_classes=num_classes)
+    elif model == 'pwrn28(4)':
+        return parseval_retrain_wrn28_4(k=k, num_classes=num_classes)
 
 
 def get_train_dataset(dataset: str) -> DataLoader:

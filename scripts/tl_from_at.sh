@@ -3,11 +3,11 @@ source scripts/utils.sh
 
 cuda $1
 
-TEACHER_MODEL_PATH=at_wrn28\(4\)_cifar10-best_robust
+TEACHER_MODEL_PATH=at_wrn34_cifar100-best_robust
 
-TARGET_DOMAIN=svhntl
-NUM_CLASSES=10
-MODEL_ARCH=wrn28\(4\)
+TARGET_DOMAIN=gtsrb
+NUM_CLASSES=43
+MODEL_ARCH=wrn34
 
 for k in 2 4 6 8 10; do
 
@@ -18,7 +18,7 @@ for k in 2 4 6 8 10; do
     valid $?
 
     python -m exps.eval_robust_wrn34 --model=trained_models/tl_${MODEL_ARCH}_${TARGET_DOMAIN}_${k}_${TEACHER_MODEL_PATH}-last -k=${k} \
-            --log=tl_cifar10_svhntl.log --result-file=logs/tl_cifar10_svhntl.json --model-type=${MODEL_ARCH} --dataset=${TARGET_DOMAIN} --num_classes=${NUM_CLASSES}
+            --log=tl_cifar100_gtsrb.log --result-file=logs/tl_cifar100_gtsrb.json --model-type=${MODEL_ARCH} --dataset=${TARGET_DOMAIN} --num_classes=${NUM_CLASSES}
     valid $?
 
 done

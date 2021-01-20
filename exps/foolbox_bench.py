@@ -11,7 +11,8 @@ from src.cli.utils import get_model
 from src.utils import (logger, get_mean_and_std,
                         get_cifar_test_dataloader,
                         get_mnist_test_dataloader,
-                        get_svhn_test_dataloader,)
+                        get_svhn_test_dataloader,
+                        get_gtsrb_test_dataloder)
 
 from foolbox.attacks import LinfPGD, LinfDeepFoolAttack, L2CarliniWagnerAttack
 from foolbox.attacks.base import Attack
@@ -21,7 +22,21 @@ from foolbox import PyTorchModel
 EPSILON = 8/255
 STEP_SIZE = 2/255
 
-SupportDatasetList = ['cifar10', 'cifar100', 'mnist', 'svhn', 'svhntl']
+SupportDatasetList = ['cifar10', 'cifar100', 'mnist', 'svhn', 'svhntl', 'gtsrb']
+
+def make_eps(dataset: str) -> None:
+    global EPSILON, STEP_SIZE
+
+    if dataset == "mnist":
+        EPSILON = 0.15
+        STEP_SIZE = 0.01
+    else:
+        EPSILON = 8/255
+        STEP_SIZE = 2/255
+
+    logger.info(f"using epsion: {EPSILON}, step size: {STEP_SIZE}")
+
+    
 def get_test_dataset(dataset: str, batch_size=256, normalize=False) -> DataLoader:
     if dataset not in SupportDatasetList:
         raise ValueError("dataset not supported")
@@ -33,14 +48,24 @@ def get_test_dataset(dataset: str, batch_size=256, normalize=False) -> DataLoade
         # 'svhn': using mean and std of 'svhn'
         # 'svhn': using mean and std of 'cifar100'
         return get_svhn_test_dataloader(dataset_norm_type=dataset, normalize=normalize, shuffle=False, batch_size=batch_size)
+    elif dataset == "gtsrb":
+        return get_gtsrb_test_dataloder(normalize=False, batch_size=batch_size)
 
 def get_attacker(attacker:str="LinfPGD")->Attack:
-    if attacker == "LinfPGD":
-        return LinfPGD(steps=20, abs_stepsize=STEP_SIZE)
+    import re
+    if attacker.startswith("LinfPGD"):
+        if attacker == "LinfPGD":
+            _steps = 100
+        else:
+            if re.match(r"LinfPGD-(\d+)", attacker) is None:
+                raise ValueError("using 'LinfPGD' or 'LinfPGD-X'")
+            [_, _steps, _] = re.split(r"LinfPGD-(\d+)", attacker)
+        logger.info(f"using attack: PGD-{_steps}")
+        return LinfPGD(steps=int(_steps), abs_stepsize=STEP_SIZE)
     elif attacker == "LinfDeepFool":
         return LinfDeepFoolAttack()
     elif attacker == "L2CW":
-        return L2CarliniWagnerAttack()
+        return L2CarliniWagnerAttack(steps=100)
     else:
         raise ValueError(f"not support attacker type '{attacker}'")
 
@@ -66,7 +91,7 @@ def accuracy(model, testset, device):
             items += labels.shape[0]
             acc += pred.argmax(dim=1).eq(labels).sum().item()
     
-    logger.info(f"Accuracy: {acc/items}%")
+    logger.info(f"Accuracy: {acc/items}")
     return acc/items
 
 
@@ -77,7 +102,7 @@ def freeze_model_trainable_params(model:torch.nn.Module):
     logger.debug("all parameters are freezed")
 
 
-def robust(model, attacker:Attack, testset, device):
+def robust(model, attacker:Attack, testset, device, total_size=None):
     fmodel = PyTorchModel(model, bounds=(0, 1), device=device)
 
     items = 0
@@ -91,6 +116,9 @@ def robust(model, attacker:Attack, testset, device):
 
         rob += (labels.shape[0] - success.sum().item())
         items += labels.shape[0]
+
+        if total_size is not None and items > total_size:
+            break
     
     logger.info(f"Robust: {rob/items}%")
 
@@ -104,18 +132,18 @@ def exp(model_path, args):
     model = get_model(args.model_type, args.num_classes, args.k).to(settings.device)
     model.load_state_dict(torch.load(model_path, map_location=settings.device))
     logger.debug(f"load from `{model_path}`")
-
     model.eval()
     freeze_model_trainable_params(model)
 
     mean, std = get_mean_and_std(args.dataset)
     model = NormalizationWrapper(model, mean, std).to(settings.device)
+    model.eval()
 
     acc = accuracy(model, testset, settings.device)
 
     attacker = get_attacker(args.attacker)
     start_time = time.perf_counter()
-    rob = robust(model, attacker, testset, settings.device)
+    rob = robust(model, attacker, testset, settings.device, total_size=args.total_size)
     end_time = time.perf_counter()
     logger.info(f"costing time: {end_time-start_time:.2f} secs")
 
@@ -152,12 +180,16 @@ if __name__ == "__main__":
     parser.add_argument("-m", "--model", type=str, default=None)
     parser.add_argument("-d", "--dataset", type=str, required=True)
     parser.add_argument("-n", "--num_classes", type=int, required=True)
-    parser.add_argument("-a", "--attacker", type=str, default="LinfPGD", choices=["LinfPGD", "LinfDeepFool", "L2CW"])
+    parser.add_argument("-a", "--attacker", type=str, default="LinfPGD")
     parser.add_argument("-k", "--k", type=int, default=1)
     parser.add_argument("--model-type", type=str, required=True)
-    parser.add_argument("--log", type=str, default="auto_atk.log")
+    parser.add_argument("--log", type=str, default="attack.log")
     parser.add_argument("--result-file", type=str, default=None)
+    parser.add_argument("--total-size", type=int, default=None)
     args = parser.parse_args()
+    logger.change_log_file(settings.log_dir / args.log)
+
+    make_eps(args.dataset)
 
     if args.model is None:
         model_list = [
@@ -166,19 +198,6 @@ if __name__ == "__main__":
     else:
         model_list = [args.model] 
     
-    logger.change_log_file(settings.log_dir / args.log)
     
     for model_path in model_list:
         exp(model_path, args)
-
-
-
-
-
-
-
-
-
-
-
-

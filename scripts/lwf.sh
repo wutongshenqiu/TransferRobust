@@ -21,20 +21,25 @@ function valid () {
 }
 ###############################################
 
-TEACHER_MODEL=at_wrn28\(4\)_cifar10-best_robust
-dataset=gtsrb
-model_arch=wrn28\(4\)
+TEACHER_MODEL=at_res18_svhn-best_robust
+dataset=mnist
+model_arch=res18
 
 lam=0.1
-num_classes=43
+num_classes=10
 
 echo "#######################################################"
 echo "lwf transfer from ${TEACHER_MODEL}"
 
-cli lwf -m ${model_arch} -n ${num_classes} -d ${dataset} -l ${lam} -t ${TEACHER_MODEL}
-valid $?
+# cli lwf -m ${model_arch} -n ${num_classes} -d ${dataset} -l ${lam} -t ${TEACHER_MODEL}
+# valid $?
 
-python -m exps.eval_robust_wrn34 --model=trained_models/lwf_${model_arch}_${dataset}_${lam}-best \
-        --log=lwf.log --result-file=logs/lwf.json --model-type=${model_arch} --dataset=${dataset} --num_classes=${num_classes}
+# python -m exps.eval_robust_wrn34 --model=trained_models/lwf_${model_arch}_${dataset}_${lam}-best \
+#         --log=lwf.log --result-file=logs/lwf.json --model-type=${model_arch} --dataset=${dataset} --num_classes=${num_classes}
+# valid $?
+
+python -m exps.foolbox_bench --model=trained_models/lwf_${model_arch}_${dataset}_${lam}-best \
+        --log=lwf_pgd100_attack.log --result-file=logs/lwd_pgd100_attack.json --model-type=${model_arch} \
+        --dataset=${dataset} --num_classes=${num_classes} --total-size 1024
 valid $?
 

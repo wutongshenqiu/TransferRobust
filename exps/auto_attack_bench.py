@@ -7,13 +7,25 @@ from src.config import set_seed
 from src.utils import (logger, get_mean_and_std,
                         get_cifar_test_dataloader,
                         get_mnist_test_dataloader,
-                        get_svhn_test_dataloader,)
+                        get_svhn_test_dataloader,
+                        get_gtsrb_test_dataloder)
 from autoattack import AutoAttack
 
 
 EPSILON = 0.15
 
-SupportDatasetList = ['cifar10', 'cifar100', 'mnist', 'svhn', 'svhntl']
+def make_eps(dataset: str) -> None:
+    global EPSILON
+
+    if dataset == "mnist":
+        EPSILON = 0.15
+    else:
+        EPSILON = 8/255
+
+    logger.info(f"using epsion: {EPSILON}")
+
+
+SupportDatasetList = ['cifar10', 'cifar100', 'mnist', 'svhn', 'svhntl', 'gtsrb']
 def get_test_dataset(dataset: str, batch_size=256) -> DataLoader:
     if dataset not in SupportDatasetList:
         raise ValueError("dataset not supported")
@@ -25,6 +37,8 @@ def get_test_dataset(dataset: str, batch_size=256) -> DataLoader:
         # 'svhn': using mean and std of 'svhn'
         # 'svhn': using mean and std of 'cifar100'
         return get_svhn_test_dataloader(dataset_norm_type=dataset, normalize=False, shuffle=False, batch_size=batch_size)
+    elif dataset == "gtsrb":
+        return get_gtsrb_test_dataloder(normalize=False, batch_size=batch_size)
 
 class NormalizationWrapper(torch.nn.Module):
     def __init__(self, model, mean, std) -> None:
@@ -169,6 +183,7 @@ if __name__ == "__main__":
         model_list = [args.model] 
     
     logger.change_log_file(settings.log_dir / args.log)
+    make_eps(args.dataset)
     
     for model_path in model_list:
         exp(model_path, args)

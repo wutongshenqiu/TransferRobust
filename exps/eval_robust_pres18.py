@@ -140,7 +140,7 @@ if __name__ == '__main__':
     params = {
         "random_init": 1,
         "epsilon": 0.15,
-        "step_size": 0.15 / 4,
+        "step_size": 0.01,
         "num_steps": 40,
         "dataset_name": args.dataset,
     }

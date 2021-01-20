@@ -61,4 +61,4 @@ python -m exps.auto_attack_bench --model=${MODEL_PATH}/${trained_model} \
 valid $?
     
 
-
+yuan
