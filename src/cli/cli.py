@@ -21,7 +21,8 @@ from src.utils import logger
 from src.trainer import (TransferLearningTrainer, LWFTransferLearningTrainer,
                          ParsevalTransferLearningTrainer, RetrainTrainer,
                          ParsevalRetrainTrainer, NormalTrainer,
-                         ADVTrainer, RobustPlusSingularRegularizationTrainer)
+                         ADVTrainer, RobustPlusSingularRegularizationTrainer,
+                         BNTransferLearningTrainer)
 
 from src.attack import LinfPGDAttack
 
@@ -147,6 +148,44 @@ def ptl(model, num_classes, dataset, beta, k, teacher):
         checkpoint_path=f"{settings.checkpoint_dir / save_name}.pth"
     )
     trainer.train(f"{settings.model_dir / save_name}")
+
+
+@cli.command()
+@click.option("-m", "--model", type=click.Choice(SupportModelList),
+              default=DefaultModel, show_default=True, help="neural network")
+@click.option("-n", "--num_classes", type=int,
+              default=10, show_default=True, help="number of classes")
+@click.option("-d", "--dataset", type=click.Choice(SupportDatasetList),
+              default=DefaultDataset, show_default=True, help="dataset")
+@click.option("-k", "--k", type=int, required=True,
+              help="trainable blocks from last")
+@click.option("-t", "--teacher", type=str, required=True,
+              help="filename of teacher model")
+@click.option("-fb", "--freeze-bn", is_flag=True, help="freeze bn layer", show_default=True)
+@click.option("-rs", "--reuse-statistic", is_flag=True, help="reuse statistic", show_default=True)
+@click.option("-rts", "--reuse-teacher-statistic", is_flag=True, help="reuse teacher statistic", show_default=True)
+def bntl(model, num_classes, dataset, k, teacher, freeze_bn, reuse_statistic, reuse_teacher_statistic):
+    """normal transfer learning with batch norm operations"""
+    save_name = f"bntl_{model}_{dataset}_{k}_{teacher}" \
+                f"{'_fb' if freeze_bn else ''}" \
+                f"{'_rs' if reuse_statistic else ''}" \
+                f"{'_rts' if reuse_teacher_statistic else ''}"
+    logger.change_log_file(f"{settings.log_dir / save_name}.log")
+
+    trainer = BNTransferLearningTrainer(
+        k=k,
+        teacher_model_path=str(settings.model_dir / teacher),
+        model=get_model(model, num_classes, k),
+        train_loader=get_train_dataset(dataset),
+        test_loader=get_test_dataset(dataset),
+        checkpoint_path=f"{settings.checkpoint_dir / save_name}.pth",
+        freeze_bn=freeze_bn,
+        reuse_statistic=reuse_statistic,
+        reuse_teacher_statistic=reuse_teacher_statistic
+    )
+    trainer.train(f"{settings.model_dir / save_name}")
+
+
 
 
 @cli.command()
