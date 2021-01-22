@@ -71,15 +71,16 @@ if __name__ == '__main__':
     parser.add_argument("--reuse-teacher-statistic", action="store_true")
 
     args = parser.parse_args()
+    print(args)
 
-    sn_tl(model=args.model, 
-        num_classes=args.num_classes, 
-        dataset=args.dataset, 
-        k=args.k, 
-        teacher=args.teacher, 
-        power_iter=args.power_iter, 
-        norm_beta=args.norm_beta,
-        freeze_bn=args.freeze_bn, 
-        reuse_statistic=args.reuse_statistic, 
-        reuse_teacher_statistic=args.reuse_teacher_statistic
-    )
+    # sn_tl(model=args.model,
+    #     num_classes=args.num_classes,
+    #     dataset=args.dataset,
+    #     k=args.k,
+    #     teacher=args.teacher,
+    #     power_iter=args.power_iter,
+    #     norm_beta=args.norm_beta,
+    #     freeze_bn=args.freeze_bn,
+    #     reuse_statistic=args.reuse_statistic,
+    #     reuse_teacher_statistic=args.reuse_teacher_statistic
+    # )
