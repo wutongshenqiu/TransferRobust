@@ -156,7 +156,6 @@ class RobustPlusSingularRegularizationTrainer(ADVTrainer, InitializeTensorboardM
         else:
             block.register_forward_hook(self._get_layer_inputs)
 
-    # FIXME
     def _get_layer_outputs(self, layer, inputs, outputs):
         if self.model.training:
             self._hooked_features_list.append(outputs.clone())

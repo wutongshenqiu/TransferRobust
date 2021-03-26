@@ -3,29 +3,26 @@ source scripts/utils.sh
 
 cuda $1
 
-dataset=mnist
-model_arch=pres18
-num_classes=10
 MODEL_LIST=(
-    "trained_models/sntl_1_0.4_False_pres18_mnist_5_wd_fdm_True_res18_svhn_5_1.0-best_robust-last"
-    "trained_models/sntl_1_0.4_True_pres18_mnist_5_wd_fdm_True_res18_svhn_5_1.0-best_robust-last"
-    
-    "trained_models/sntl_1_0.4_False_pres18_mnist_5_at_res18_svhn-best_robust-last"
-    "trained_models/sntl_1_0.4_True_pres18_mnist_5_at_res18_svhn-best_robust-last"
-
-    "trained_models/tl_res18_mnist_5_at_res18_svhn-best_robust-last"
+    "trained_models/lwf_wrn34_cifar10(0.1)_0.1-best"
+    "trained_models/lwf_wrn34_cifar10(0.2)_0.1-best"
+    "trained_models/lwf_wrn34_cifar10(0.5)_0.1-best"
 )
 
-
-# k_list=(2 4 6 8 10)
-# i=0
+dataset=cifar10
+num_classes=10
+model_arch=wrn34
+total_size=10000
 
 for model in ${MODEL_LIST[@]}; do
     echo "using $model"
+
     python -m exps.foolbox_bench \
-            --model=${model} \
-            --log=neft_${model_arch}_${dataset}_pgd100_attack.log --result-file=logs/partial_lwf_${dataset}_pgd100_attack.json --model-type=${model_arch} \
-            --dataset=${dataset} --num_classes=${num_classes} --total-size 1024
+        --model=${model} \
+        -k=${2} \
+        --log=tl_${model_arch}_${total_size}_${dataset}_pgd100.log \
+        --result-file=logs/lwf_${model_arch}_${total_size}_${dataset}_pgd100.json \
+        --model-type=${model_arch} \
+        --dataset=${dataset} --num_classes=${num_classes} --total-size ${total_size}
     valid $?
-    # i=$((i+1))
 done

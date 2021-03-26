@@ -51,6 +51,9 @@ def get_mean_and_std(dataset: str) -> Tuple[Tuple, Tuple]:
         logger.debug(f"get mean and std of svhn")
         mean = SVHN_TRAIN_MEAN
         std = SVHN_TRAIN_STD
+        # logger.warning("Using mean and std of gtsrb!")
+        # mean = GTSRB_TRAIN_MEAN
+        # std = GTSRB_TRAIN_STD
     elif dataset == "svhntl":
         # logger.debug(f"get mean and std of cifar10")
         logger.warning("Using mean and std of cifar100 for dataset svhn!")
@@ -59,6 +62,9 @@ def get_mean_and_std(dataset: str) -> Tuple[Tuple, Tuple]:
     elif dataset == "gtsrb":
         logger.warning("Using mean and std as cifar10 for dataset gtsrb!")
         return get_mean_and_std("cifar10")
+        # logger.warning("Using mean and std of gtsrb!")
+        # mean = GTSRB_TRAIN_MEAN
+        # std = GTSRB_TRAIN_STD
     else:
         raise ValueError(f'dataset "{dataset}" is not supported!')
 

@@ -20,7 +20,7 @@ def sn_tl(model, num_classes, dataset, k, teacher, power_iter, norm_beta, freeze
     """transform leanring"""
     from .utils import make_term
     term = make_term(freeze_bn, reuse_statistic, reuse_teacher_statistic)
-    save_name = f"sntl_{power_iter}_{norm_beta}_{term}_{model}_{dataset}_{k}_{teacher}"
+    save_name = f"sntl_{power_iter}_{norm_beta}_{term}_{model}_{dataset}_{k}_{teacher}_{settings.seed}"
 
     logger.change_log_file(f"{settings.log_dir / save_name}.log")
 
@@ -71,16 +71,16 @@ if __name__ == '__main__':
     parser.add_argument("--reuse-teacher-statistic", action="store_true")
 
     args = parser.parse_args()
-    print(args)
+    # print(args)
 
-    # sn_tl(model=args.model,
-    #     num_classes=args.num_classes,
-    #     dataset=args.dataset,
-    #     k=args.k,
-    #     teacher=args.teacher,
-    #     power_iter=args.power_iter,
-    #     norm_beta=args.norm_beta,
-    #     freeze_bn=args.freeze_bn,
-    #     reuse_statistic=args.reuse_statistic,
-    #     reuse_teacher_statistic=args.reuse_teacher_statistic
-    # )
+    sn_tl(model=args.model,
+        num_classes=args.num_classes,
+        dataset=args.dataset,
+        k=args.k,
+        teacher=args.teacher,
+        power_iter=args.power_iter,
+        norm_beta=args.norm_beta,
+        freeze_bn=args.freeze_bn,
+        reuse_statistic=args.reuse_statistic,
+        reuse_teacher_statistic=args.reuse_teacher_statistic
+    )

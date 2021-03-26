@@ -107,7 +107,7 @@ def tl(model, num_classes, dataset, k, teacher):
               help="filename of teacher model")
 def lwf(model, num_classes, dataset, lambda_, teacher):
     """learning without forgetting"""
-    save_name = f"lwf_{model}_{dataset}_{lambda_}"
+    save_name = f"lwf_{model}_{dataset}_{lambda_}_{settings.seed}"
     logger.change_log_file(f"{settings.log_dir / save_name}.log")
     trainer = LWFTransferLearningTrainer(
         _lambda=lambda_,

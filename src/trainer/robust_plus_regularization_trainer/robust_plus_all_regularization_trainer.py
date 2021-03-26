@@ -13,7 +13,7 @@ from src.networks import SupportedAllModuleType, make_blocks
 class RobustPlusAllRegularizationTrainer(ADVTrainer, InitializeTensorboardMixin):
     def __init__(self, _lambda: float, model: SupportedAllModuleType, train_loader: DataLoader,
                  test_loader: DataLoader, attacker, params: Dict, checkpoint_path: str = None):
-        warnings.warn(f"trainer {RobustPlusAllRegularizationTrainer.__name__} should not be used!")
+        warnings.warn(f"trainer {type(self).__name__} should not be used!")
         super().__init__(model, train_loader, test_loader,
                          attacker, params, checkpoint_path)
         self._blocks = make_blocks(model)
@@ -31,6 +31,7 @@ class RobustPlusAllRegularizationTrainer(ADVTrainer, InitializeTensorboardMixin)
         clean_outputs = self.model(inputs)
 
         regularization_term = self._calculate_regularization()
+        assert regularization_term.requires_grad
         l_term = self.criterion(adv_outputs, labels)
         loss = l_term + self._lambda * regularization_term
 
@@ -50,10 +51,12 @@ class RobustPlusAllRegularizationTrainer(ADVTrainer, InitializeTensorboardMixin)
                 dim=1
             ).sum()
 
+        total_blocks = self._blocks.get_total_blocks()
+        assert len(self._hooked_features_list) == 2 * total_blocks
         sum_regularization = sum(map(
             calculate_kth_regularization,
-            self._hooked_features_list[:17],
-            self._hooked_features_list[17:]
+            self._hooked_features_list[:total_blocks],
+            self._hooked_features_list[total_blocks:]
         ))
 
         self._hooked_features_list.clear()
@@ -61,19 +64,30 @@ class RobustPlusAllRegularizationTrainer(ADVTrainer, InitializeTensorboardMixin)
         return sum_regularization
 
     def _register_forward_hook_to_all_block(self):
+        for k in range(1, self._blocks.get_total_blocks() + 1):
+            self._register_forward_hook_to_k_block(k)
+
+
+    def _register_forward_hook_to_k_block(self, k):
         total_blocks = self._blocks.get_total_blocks()
-        logger.debug(f"model total blocks: {total_blocks}")
-        for k in range(1, total_blocks+1):
-            logger.debug(f"register hook to the last layer of {k}th block")
-            block = getattr(self._blocks, f"block{k}")
-            if isinstance(block, torch.nn.Sequential):
-                block[-1].register_forward_hook(self._get_layer_outputs)
-            else:
-                block.register_forward_hook(self._get_layer_outputs)
+        assert 1 <= k <= total_blocks
+        logger.debug(f"register hook to the last layer of {k}th block from last")
+        block = getattr(self._blocks, f"block{total_blocks-k+1}")
+        # FIXME
+        if isinstance(block, torch.nn.Sequential):
+            # block[-1].register_forward_hook(self._get_layer_outputs)
+            # input of next block
+            block[0].register_forward_hook(self._get_layer_inputs)
+        else:
+            block.register_forward_hook(self._get_layer_inputs)
 
     def _get_layer_outputs(self, layer, inputs, outputs):
         if self.model.training:
             self._hooked_features_list.append(outputs.clone())
+
+    def _get_layer_inputs(self, layer, inputs, outputs):
+        if self.model.training:
+            self._hooked_features_list.append(inputs[0].clone())
 
 
 if __name__ == '__main__':
